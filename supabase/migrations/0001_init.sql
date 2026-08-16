@@ -3,8 +3,6 @@
 -- Multi-tenant: organizations ↔ memberships (admin | member)
 -- ============================================================
 
-create extension if not exists pgcrypto;
-
 -- ---------- profiles (1:1 with auth.users) ----------
 create table public.profiles (
   id              uuid primary key references auth.users(id) on delete cascade,
@@ -202,7 +200,7 @@ returns uuid language plpgsql security definer set search_path = public as $$
 declare new_id uuid; code text;
 begin
   if auth.uid() is null then raise exception 'not authenticated'; end if;
-  code := upper(substr(encode(gen_random_bytes(6), 'hex'), 1, 8));
+  code := upper(substr(md5(random()::text || clock_timestamp()::text), 1, 8));
   insert into organizations (name, join_code, created_by) values (org_name, code, auth.uid()) returning id into new_id;
   insert into memberships (org_id, user_id, role) values (new_id, auth.uid(), 'admin');
   return new_id;
