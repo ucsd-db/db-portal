@@ -19,11 +19,11 @@ export default async function DashboardPage() {
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
       <section>
         <div className="flex items-center justify-between mb-3">
-          <h1 className="text-2xl font-bold">Board</h1>
+          <h1 className="text-2xl font-normal">Board</h1>
           {isAdmin && <Link href="/admin/announcements" className="btn-secondary">New announcement</Link>}
         </div>
         {pendingForms.length > 0 && (
-          <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm">
+          <div className="mb-4 rounded-lg border p-4 text-sm" style={{ borderColor: "#fde293", background: "#fef7e0" }}>
             <div className="font-semibold text-amber-800">📝 You have {pendingForms.length} form{pendingForms.length > 1 ? "s" : ""} to fill out</div>
             <ul className="mt-1 space-y-0.5">
               {pendingForms.map((f) => <li key={f.id}><Link href={`/forms/${f.id}`} className="underline">{f.title}</Link>{f.due_at && <span className="text-amber-700"> · due {fmtDateTime(f.due_at)}</span>}</li>)}

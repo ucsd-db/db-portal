@@ -36,7 +36,7 @@ export default async function AdminLineupsPage({ searchParams }: { searchParams:
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-bold">Lineups</h1>
+        <h1 className="text-2xl font-normal">Lineups</h1>
         <form className="flex items-center gap-2 text-sm">
           <label>Event:</label>
           <select name="event" defaultValue={eventId ?? ""} className="input w-auto py-1">

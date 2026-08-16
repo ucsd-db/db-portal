@@ -12,11 +12,11 @@ export default async function AdminAnnouncementsPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <section>
-        <h1 className="text-2xl font-bold mb-3">New announcement</h1>
+        <h1 className="text-2xl font-normal mb-3">New announcement</h1>
         <AnnouncementForm />
       </section>
       <section>
-        <h2 className="text-lg font-semibold mb-3">Posted</h2>
+        <h2 className="text-lg font-medium mb-3">Posted</h2>
         <ul className="space-y-2">
           {items?.map((a) => (
             <li key={a.id} className="card text-sm">

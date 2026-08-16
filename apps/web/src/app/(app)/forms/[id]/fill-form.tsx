@@ -6,6 +6,14 @@ import AttendanceFields from "@/components/attendance-fields";
 import { fmtDateTime } from "@/lib/format";
 import type { Event, FormQuestion, PickupLocation, Rsvp } from "@/lib/database.types";
 
+const Q = ({ title, required, help, children }: { title: React.ReactNode; required?: boolean; help?: string; children: React.ReactNode }) => (
+  <div className="gf-card space-y-3">
+    <div className="text-base font-normal">{title}{required && <span className="gf-required"> *</span>}</div>
+    {help && <p className="text-xs whitespace-pre-wrap" style={{ color: "var(--g-grey-600)" }}>{help}</p>}
+    {children}
+  </div>
+);
+
 export default function FillForm({ formId, events, rsvpBy, questions, existingAnswers, pickups, defaultSeats, weightKg, submittedAt }: {
   formId: string; events: { prompt: string | null; event: Event }[]; rsvpBy: Record<string, Rsvp>; questions: FormQuestion[];
   existingAnswers: Record<string, unknown> | null; pickups: PickupLocation[]; defaultSeats: number | null; weightKg: number | null; submittedAt: string | null;
@@ -13,52 +21,43 @@ export default function FillForm({ formId, events, rsvpBy, questions, existingAn
   const [state, action, pending] = useActionState<SubmitState, FormData>(submitForm, {});
   const a = (id: string) => existingAnswers?.[id];
   return (
-    <form action={action} className="space-y-4">
+    <form action={action} className="space-y-3">
       <input type="hidden" name="form_id" value={formId} />
 
-      <div className="card text-sm">
-        <label className="label">⚖️ Current weight (kg) — coaches use this to balance the boat</label>
-        <input name="weight_kg" type="number" step="0.1" min={30} max={200} defaultValue={weightKg ?? ""} placeholder="e.g. 65" className="input w-40" />
-        <p className="text-xs text-slate-500 mt-1">Leave as-is if unchanged. Saved to your profile.</p>
-      </div>
+      <Q title="🏆 What's your current weight? (kg)" help="Coaches need this to make lineups. Leave as-is if unchanged — saved to your profile.">
+        <input name="weight_kg" type="number" step="0.1" min={30} max={200} defaultValue={weightKg ?? ""} placeholder="Your answer" className="input-line w-1/2" />
+      </Q>
 
       {events.map(({ event, prompt }, i) => (
-        <div key={event.id} className="card space-y-2">
-          <div className="text-xs uppercase tracking-wide text-slate-400">{event.kind}</div>
-          <h3 className="font-semibold">{prompt || `${i % 2 ? "🌚" : "🌝"} Will you be attending ${event.title}?`}</h3>
-          <p className="text-sm text-slate-600">{fmtDateTime(event.starts_at)}{event.location_name && ` · 📍 ${event.location_name}`}</p>
-          {event.notes && <p className="text-xs text-slate-500 whitespace-pre-wrap">{event.notes}</p>}
+        <Q key={event.id} required title={prompt || `${i % 2 ? "🌚" : "🌝"} Will you be attending ${event.title}?`}
+          help={`${fmtDateTime(event.starts_at)}${event.location_name ? ` · 📍 ${event.location_name}` : ""}${event.notes ? `\n${event.notes}` : ""}`}>
           <AttendanceFields prefix={`ev_${event.id}_`} existing={rsvpBy[event.id] ?? null} pickups={pickups} defaultSeats={defaultSeats} />
-        </div>
+        </Q>
       ))}
 
       {questions.map((q) => (
-        <div key={q.id} className="card space-y-2 text-sm">
-          <label className="font-semibold">{q.label}{q.required && <span className="text-red-500"> *</span>}</label>
-          {q.help && <p className="text-xs text-slate-500">{q.help}</p>}
-          {q.type === "short_text" && <input name={`q_${q.id}`} defaultValue={(a(q.id) as string) ?? ""} required={q.required} className="input" />}
-          {q.type === "long_text" && <textarea name={`q_${q.id}`} defaultValue={(a(q.id) as string) ?? ""} required={q.required} rows={3} className="input" />}
-          {q.type === "number" && <input name={`q_${q.id}`} type="number" step="any" defaultValue={(a(q.id) as number) ?? ""} required={q.required} className="input w-40" />}
-          {q.type === "yes_no" && (
-            <div className="flex gap-4">
-              {(["yes", "no"] as const).map((v) => (
-                <label key={v} className="flex items-center gap-1 capitalize"><input type="radio" name={`q_${q.id}`} value={v} required={q.required} defaultChecked={a(q.id) === (v === "yes")} /> {v}</label>
-              ))}
-            </div>
-          )}
+        <Q key={q.id} title={q.label} required={q.required} help={q.help}>
+          {q.type === "short_text" && <input name={`q_${q.id}`} defaultValue={(a(q.id) as string) ?? ""} required={q.required} placeholder="Your answer" className="input-line w-1/2" />}
+          {q.type === "long_text" && <textarea name={`q_${q.id}`} defaultValue={(a(q.id) as string) ?? ""} required={q.required} rows={2} placeholder="Your answer" className="input-line" />}
+          {q.type === "number" && <input name={`q_${q.id}`} type="number" step="any" defaultValue={(a(q.id) as number) ?? ""} required={q.required} placeholder="Your answer" className="input-line w-1/3" />}
+          {q.type === "yes_no" && (["yes", "no"] as const).map((v) => (
+            <label key={v} className="gf-radio capitalize"><input type="radio" name={`q_${q.id}`} value={v} required={q.required} defaultChecked={a(q.id) === (v === "yes")} /> {v}</label>
+          ))}
           {q.type === "single_choice" && (q.options ?? []).map((o) => (
-            <label key={o} className="flex items-center gap-2"><input type="radio" name={`q_${q.id}`} value={o} required={q.required} defaultChecked={a(q.id) === o} /> {o}</label>
+            <label key={o} className="gf-radio"><input type="radio" name={`q_${q.id}`} value={o} required={q.required} defaultChecked={a(q.id) === o} /> {o}</label>
           ))}
           {q.type === "multi_choice" && (q.options ?? []).map((o) => (
-            <label key={o} className="flex items-center gap-2"><input type="checkbox" name={`q_${q.id}`} value={o} defaultChecked={Array.isArray(a(q.id)) && (a(q.id) as string[]).includes(o)} /> {o}</label>
+            <label key={o} className="gf-radio"><input type="checkbox" name={`q_${q.id}`} value={o} defaultChecked={Array.isArray(a(q.id)) && (a(q.id) as string[]).includes(o)} /> {o}</label>
           ))}
-        </div>
+        </Q>
       ))}
 
-      {state.error && <p className="text-sm text-red-600">{state.error}</p>}
-      {state.saved && <p className="text-sm text-green-700">Submitted! You can resubmit any time before the form closes — latest wins.</p>}
-      <button disabled={pending} className="btn-primary w-full">{pending ? "Submitting…" : submittedAt ? "Update my response" : "Submit"}</button>
-      {submittedAt && !state.saved && <p className="text-center text-xs text-slate-500">You last submitted {fmtDateTime(submittedAt)}.</p>}
+      {state.error && <p className="text-sm" style={{ color: "var(--g-red)" }}>{state.error}</p>}
+      {state.saved && <div className="gf-card text-sm">✅ Your response has been recorded. You can resubmit any time before the form closes — the latest one counts.</div>}
+      <div className="flex items-center justify-between pt-1">
+        <button disabled={pending} className="btn-purple">{pending ? "Submitting…" : submittedAt ? "Update response" : "Submit"}</button>
+        {submittedAt && !state.saved && <span className="text-xs" style={{ color: "var(--g-grey-600)" }}>Last submitted {fmtDateTime(submittedAt)}</span>}
+      </div>
     </form>
   );
 }

@@ -6,6 +6,7 @@ import { fmtDateTime } from "@/lib/format";
 import { toChoice, ATTENDANCE_OPTIONS } from "@/lib/attendance";
 import type { FormQuestion, Profile, Rsvp } from "@/lib/database.types";
 import ExportCsv from "./export-csv";
+import FormTabs from "@/components/form-tabs";
 
 const choiceLabel = Object.fromEntries(ATTENDANCE_OPTIONS.map((o) => [o.value, o.label.replace(/ [^\w\s]+$/u, "")]));
 
@@ -54,11 +55,13 @@ export default async function FormResponsesPage({ params }: { params: Promise<{ 
   const rows = responded.map((p) => [p.full_name, p.email, p.weight_kg ?? "", p.phone ?? "", ...events.map((e) => rideCell(rsvpBy.get(`${e.id}:${p.id}`))), ...questions.map((q) => ansCell(p.id, q)), fmtDateTime(respBy.get(p.id)!.submitted_at)]);
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-center justify-between gap-2">
+    <div className="gf-page -m-4 md:-m-6 min-h-full p-4 md:p-6">
+      <FormTabs id={id} responses={responded.length} />
+      <div className="mx-auto max-w-[1100px] space-y-3">
+      <div className="gf-header flex flex-wrap items-center justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-bold">{form.title}</h1>
-          <p className="text-sm text-slate-500">{responded.length}/{profiles.length} responded{form.due_at && ` · due ${fmtDateTime(form.due_at)}`} · <Link href={`/admin/forms/${id}`} className="underline">edit</Link></p>
+          <h1 className="text-2xl font-normal">{responded.length} responses <span className="text-sm" style={{ color: "var(--g-grey-600)" }}>of {profiles.length} members</span></h1>
+          <p className="text-sm" style={{ color: "var(--g-grey-600)" }}>{form.title}{form.due_at && ` · due ${fmtDateTime(form.due_at)}`}</p>
         </div>
         <ExportCsv filename={`${form.title}.csv`} header={header} rows={rows.map((r) => r.map(String))} />
       </div>
@@ -70,7 +73,7 @@ export default async function FormResponsesPage({ params }: { params: Promise<{ 
             const n = (f: (r: Rsvp) => boolean) => rs.filter(f).length;
             const seats = rs.filter((r) => r.ride === "driver").reduce((a, r) => a + (r.seats ?? 0), 0);
             return (
-              <div key={e.id} className="card text-sm">
+              <div key={e.id} className="gf-card !p-4 text-sm">
                 <div className="font-medium"><Link href={`/events/${e.id}`} className="hover:underline">{e.title}</Link></div>
                 <div className="text-xs text-slate-500">{fmtDateTime(e.starts_at)}</div>
                 <div className="mt-2 grid grid-cols-2 gap-x-3 text-xs">
@@ -85,19 +88,23 @@ export default async function FormResponsesPage({ params }: { params: Promise<{ 
         </div>
       )}
 
-      <div className="card p-0 overflow-x-auto">
-        <table className="w-full text-xs">
-          <thead className="bg-slate-50 text-left text-slate-500"><tr>{header.map((h) => <th key={h} className="p-2 whitespace-nowrap">{h}</th>)}</tr></thead>
+      <div className="sheet-wrap">
+        <div className="flex items-center gap-2 border-b px-3 py-2 text-xs" style={{ borderColor: "var(--g-grey-300)", background: "var(--g-green-soft)", color: "var(--g-green)" }}>
+          <span className="font-medium">▦ Responses sheet</span><span style={{ color: "var(--g-grey-600)" }}>· one row per member, latest submission</span>
+        </div>
+        <table className="sheet">
+          <thead><tr><th className="w-8 text-center">#</th>{header.map((h) => <th key={h} className="whitespace-nowrap">{h}</th>)}</tr></thead>
           <tbody>
-            {rows.map((r, i) => <tr key={i} className="border-t border-slate-100">{r.map((c, j) => <td key={j} className="p-2 align-top max-w-[220px]">{String(c)}</td>)}</tr>)}
-            {!rows.length && <tr><td className="p-3 text-slate-400" colSpan={header.length}>No responses yet.</td></tr>}
+            {rows.map((r, i) => <tr key={i}><td className="text-center" style={{ background: "var(--g-grey-100)", color: "var(--g-grey-600)" }}>{i + 1}</td>{r.map((c, j) => <td key={j} className="max-w-[240px]">{String(c)}</td>)}</tr>)}
+            {!rows.length && <tr><td colSpan={header.length + 1} className="p-3" style={{ color: "var(--g-grey-600)" }}>No responses yet.</td></tr>}
           </tbody>
         </table>
       </div>
 
-      <div className="card text-sm">
-        <h3 className="font-semibold mb-1">Haven’t responded ({missing.length})</h3>
-        <p className="text-slate-600">{missing.map((p) => p.full_name || p.email).join(", ") || "Everyone has responded 🎉"}</p>
+      <div className="gf-card text-sm">
+        <h3 className="font-medium mb-1">Haven’t responded ({missing.length})</h3>
+        <p style={{ color: "var(--g-grey-600)" }}>{missing.map((p) => p.full_name || p.email).join(", ") || "Everyone has responded 🎉"}</p>
+      </div>
       </div>
     </div>
   );

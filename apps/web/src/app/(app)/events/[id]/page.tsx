@@ -32,7 +32,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
       <section>
-        <h1 className="text-2xl font-bold">{event.title} <span className="text-xs uppercase text-slate-400 font-normal">{event.kind}</span></h1>
+        <h1 className="text-2xl font-normal">{event.title} <span className="text-xs uppercase text-slate-400 font-normal">{event.kind}</span></h1>
         <p className="text-slate-600">{fmtDateTime(event.starts_at)}{event.ends_at && ` – ${new Date(event.ends_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`}</p>
         {event.location_name && <p className="text-slate-600">📍 {event.location_name}</p>}
         {event.notes && <p className="mt-3 whitespace-pre-wrap text-sm">{event.notes}</p>}

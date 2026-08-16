@@ -14,7 +14,7 @@ export default async function FormsPage() {
   return (
     <div className="space-y-6">
       <section>
-        <h1 className="text-2xl font-bold mb-3">Open forms</h1>
+        <h1 className="text-2xl font-normal mb-3">Open forms</h1>
         {!open.length && <p className="text-slate-500">Nothing to fill out right now 🎉</p>}
         <ul className="space-y-2">
           {open.map((f) => { const r = mine(f); return (
@@ -26,7 +26,7 @@ export default async function FormsPage() {
       </section>
       {closed.length > 0 && (
         <section>
-          <h2 className="text-lg font-semibold mb-2 text-slate-600">Closed</h2>
+          <h2 className="text-lg font-medium mb-2 text-slate-600">Closed</h2>
           <ul className="space-y-1">
             {closed.map((f) => <li key={f.id}><Link href={`/forms/${f.id}`} className="text-sm text-slate-600 hover:underline">{f.title}</Link>{mine(f) ? <span className="text-xs text-slate-400"> · responded</span> : ""}</li>)}
           </ul>

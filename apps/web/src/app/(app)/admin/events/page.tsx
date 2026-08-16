@@ -13,11 +13,11 @@ export default async function AdminEventsPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <section>
-        <h1 className="text-2xl font-bold mb-3">New event</h1>
+        <h1 className="text-2xl font-normal mb-3">New event</h1>
         <EventForm />
       </section>
       <section>
-        <h2 className="text-lg font-semibold mb-3">All events</h2>
+        <h2 className="text-lg font-medium mb-3">All events</h2>
         <ul className="space-y-2">
           {items?.map((p) => {
             const r = p.rsvps as { status: string }[];
