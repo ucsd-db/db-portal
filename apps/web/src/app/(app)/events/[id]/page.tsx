@@ -8,17 +8,18 @@ import type { Lineup } from "@db/lineup";
 import type { Car } from "@db/carpool";
 import LineupView from "@/components/lineup-view";
 
-export default async function PracticePage({ params }: { params: Promise<{ id: string }> }) {
+export default async function EventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const { userId, profile, isAdmin } = await requireOrg();
   const supabase = await createClient();
-  const { data: practice } = await supabase.from("practices").select("*").eq("id", id).maybeSingle();
-  if (!practice) notFound();
-  const [{ data: rsvps }, { data: lineups }, { data: carpool }, { data: teammates }] = await Promise.all([
-    supabase.from("rsvps").select("*, profile:profiles(full_name)").eq("practice_id", id).order("updated_at"),
-    supabase.from("lineups").select("*").eq("practice_id", id).eq("published", true).order("name"),
-    supabase.from("carpools").select("*").eq("practice_id", id).eq("published", true).maybeSingle(),
+  const { data: event } = await supabase.from("events").select("*").eq("id", id).maybeSingle();
+  if (!event) notFound();
+  const [{ data: rsvps }, { data: lineups }, { data: carpool }, { data: teammates }, { data: pickups }] = await Promise.all([
+    supabase.from("rsvps").select("*, profile:profiles(full_name)").eq("event_id", id).order("updated_at"),
+    supabase.from("lineups").select("*").eq("event_id", id).eq("published", true).order("name"),
+    supabase.from("carpools").select("*").eq("event_id", id).eq("published", true).maybeSingle(),
     supabase.from("profiles").select("id, full_name, email"),
+    supabase.from("pickup_locations").select("*").eq("org_id", event.org_id).eq("active", true).order("sort_order"),
   ]);
   const names: Record<string, string> = {};
   for (const t of teammates ?? []) names[t.id] = t.full_name || t.email;
@@ -26,16 +27,16 @@ export default async function PracticePage({ params }: { params: Promise<{ id: s
   const list = (rsvps ?? []) as (Rsvp & { profile: { full_name: string } | null })[];
   const mine = list.find((r) => r.user_id === userId) ?? null;
   const by = (s: Rsvp["status"]) => list.filter((r) => r.status === s);
-  const closed = practice.rsvp_deadline ? new Date(practice.rsvp_deadline) < new Date() : false;
+  const closed = event.rsvp_deadline ? new Date(event.rsvp_deadline) < new Date() : false;
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
       <section>
-        <h1 className="text-2xl font-bold">{practice.title}</h1>
-        <p className="text-slate-600">{fmtDateTime(practice.starts_at)}{practice.ends_at && ` – ${new Date(practice.ends_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`}</p>
-        {practice.location_name && <p className="text-slate-600">📍 {practice.location_name}</p>}
-        {practice.notes && <p className="mt-3 whitespace-pre-wrap text-sm">{practice.notes}</p>}
-        {practice.rsvp_deadline && <p className="mt-2 text-xs text-slate-500">RSVP by {fmtDateTime(practice.rsvp_deadline)}{closed && " (closed)"}</p>}
+        <h1 className="text-2xl font-bold">{event.title} <span className="text-xs uppercase text-slate-400 font-normal">{event.kind}</span></h1>
+        <p className="text-slate-600">{fmtDateTime(event.starts_at)}{event.ends_at && ` – ${new Date(event.ends_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`}</p>
+        {event.location_name && <p className="text-slate-600">📍 {event.location_name}</p>}
+        {event.notes && <p className="mt-3 whitespace-pre-wrap text-sm">{event.notes}</p>}
+        {event.rsvp_deadline && <p className="mt-2 text-xs text-slate-500">RSVP by {fmtDateTime(event.rsvp_deadline)}{closed && " (closed)"}</p>}
         {!!lineups?.length && (
           <div className="mt-6">
             <h2 className="font-semibold mb-2">Lineups</h2>
@@ -60,7 +61,7 @@ export default async function PracticePage({ params }: { params: Promise<{ id: s
         )}
         <div className="mt-6">
           {closed && !isAdmin ? <p className="card text-sm text-slate-600">RSVPs are closed. {mine ? `Your response: ${mine.status}` : ""}</p>
-            : <RsvpForm practiceId={id} existing={mine} defaultSeats={profile.car_seats} />}
+            : <RsvpForm eventId={id} existing={mine} defaultSeats={profile.car_seats} pickups={pickups ?? []} />}
         </div>
       </section>
       <aside className="space-y-4">
@@ -73,6 +74,7 @@ export default async function PracticePage({ params }: { params: Promise<{ id: s
                   <span>{r.profile?.full_name || "Member"}</span>
                   <span className="text-xs text-slate-500">
                     {r.ride === "driver" && `🚗 ${r.seats ?? "?"} seats`}
+                    {r.ride === "self" && "🫥 own ride"}
                     {r.ride === "needs_ride" && "🙋 needs ride"}
                   </span>
                 </li>

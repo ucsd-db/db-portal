@@ -4,15 +4,18 @@ import { signOut } from "@/app/(auth)/actions";
 
 const memberNav = [
   { href: "/dashboard", label: "Board" },
-  { href: "/practices", label: "Practices" },
+  { href: "/forms", label: "Forms" },
+  { href: "/events", label: "Events" },
   { href: "/profile", label: "My profile" },
 ];
 const adminNav = [
   { href: "/admin/announcements", label: "Announcements" },
-  { href: "/admin/practices", label: "Manage practices" },
+  { href: "/admin/forms", label: "Forms" },
+  { href: "/admin/events", label: "Events" },
   { href: "/admin/members", label: "Members" },
   { href: "/admin/lineups", label: "Lineups" },
   { href: "/admin/carpool", label: "Carpool" },
+  { href: "/admin/settings", label: "Settings" },
 ];
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {

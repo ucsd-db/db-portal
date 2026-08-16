@@ -1,7 +1,8 @@
 # Dragon Boat Team Portal
 
-Team portal for a ~50-person dragon boat team: announcements board, practice
-attendance (RSVP), boat lineup builder, and carpool coordination. Admin panel +
+Team portal for a ~50-person dragon boat team: announcements board, weekly
+practice / race / social **forms** (attendance + rides + custom questions),
+boat lineup builder, and carpool coordination. Admin panel +
 member panel, multi-team ("organization") aware. Everything runs on free tiers.
 
 ## Stack
@@ -27,10 +28,18 @@ supabase/migrations/ SQL schema + RLS policies + RPCs
 
 - `profiles` — 1:1 with auth users; weight/gender/side pref/steer/drum + address (geocoded lat/lon), can_drive, car_seats
 - `organizations` (team) with a `join_code`; `memberships (org_id, user_id, role: admin|member)`
-- `announcements` (admin → board), `practices` (events), `rsvps (status yes/maybe/no, ride none/driver/needs_ride, seats)`
+- `announcements` (admin → board)
+- `events` (`kind`: practice | race | social | other, time, location lat/lon)
+- `pickup_locations` — named meetup spots (e.g. each campus college) paddlers can choose when they need a ride
+- `forms` — the weekly practice form / race logistics form: description, due date, `status` draft|open|closed,
+  `questions` jsonb (short/long text, single/multi choice, yes/no, number); `form_events` links a form to
+  1..n events (each gets the standard attendance question); `form_responses` (one per user, latest wins)
+- `rsvps (event_id, user_id)` — normalized attendance: `status yes/maybe/no`, `ride driver|self|needs_ride|none`,
+  `seats`, `pickup_location_id` / `pickup_address`, `form_id`. Written by both forms and the quick RSVP, and read
+  by the lineup and carpool builders.
 - `lineups` (jsonb `@db/lineup` Lineup, `published` flag) and `carpools` (jsonb cars, `published`)
-- RLS: members read within their org; admins write; profiles readable by teammates; users write own profile/RSVP;
-  lineups/carpools visible to members only when published.
+- RLS: members read within their org; admins write; profiles readable by teammates; users write own profile/RSVP/
+  form response (only while the form is open); lineups/carpools visible to members only when published; draft forms hidden.
 - RPCs: `create_organization(name)` (caller becomes admin), `join_organization(code)`.
 
 ## Local setup
@@ -59,12 +68,16 @@ Import the repo, set **Root Directory** to `apps/web`, add the two `NEXT_PUBLIC_
 
 - [x] Auth, teams (create/join by code), admin/member roles, RLS
 - [x] Board with pinned announcements
-- [x] Practices + RSVP (attendance + ride needs)
+- [x] Events (practice/race/social) + quick RSVP (attendance + ride + pickup spot)
+- [x] Forms: admin builder (multi-event attendance + custom questions, draft/open/closed, duplicate),
+      member fill page (profile prefilled, weight update, latest-wins), responses table + per-event summary + CSV
+- [x] Pickup locations (team settings) used by RSVPs and the carpool map
 - [x] Member profile (paddling stats, address geocoding, car info)
 - [x] Admin: lineup builder (auto-fill, click-to-place/swap, L/R + F/B weight, publish, mastersheet copy)
 - [x] Admin: carpool builder (optimizer, manual overrides, OSRM routes on map, publish)
-- [x] Member view of published lineups/carpools per practice
-- [ ] Generic forms (custom fields per practice / sign-ups / waivers)
+- [x] Member view of published lineups/carpools per event
+- [ ] File-upload questions (waiver screenshots) — needs Supabase Storage bucket
+- [ ] Branching questions (e.g. "carpooling vs flying" sections)
 - [ ] Attendance history & stats per paddler
 - [ ] Multiple lineups per practice shown side-by-side; race-day mode (heats)
 - [ ] Notifications (email via Supabase / Resend free tier)

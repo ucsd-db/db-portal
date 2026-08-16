@@ -4,14 +4,16 @@ import { createClient } from "@/lib/supabase/server";
 import { fmtDateTime } from "@/lib/format";
 
 export default async function DashboardPage() {
-  const { org, isAdmin } = await requireOrg();
+  const { org, isAdmin, userId } = await requireOrg();
   const supabase = await createClient();
-  const [{ data: announcements }, { data: practices }] = await Promise.all([
+  const [{ data: announcements }, { data: events }, { data: openForms }] = await Promise.all([
     supabase.from("announcements").select("*, author:profiles(full_name)").eq("org_id", org.id)
       .order("pinned", { ascending: false }).order("created_at", { ascending: false }).limit(10),
-    supabase.from("practices").select("*").eq("org_id", org.id)
+    supabase.from("events").select("*").eq("org_id", org.id)
       .gte("starts_at", new Date().toISOString()).order("starts_at").limit(5),
+    supabase.from("forms").select("id, title, due_at, form_responses(user_id)").eq("org_id", org.id).eq("status", "open").order("due_at", { ascending: true, nullsFirst: false }),
   ]);
+  const pendingForms = (openForms ?? []).filter((f) => !(f.form_responses as { user_id: string }[]).some((r) => r.user_id === userId));
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -20,6 +22,14 @@ export default async function DashboardPage() {
           <h1 className="text-2xl font-bold">Board</h1>
           {isAdmin && <Link href="/admin/announcements" className="btn-secondary">New announcement</Link>}
         </div>
+        {pendingForms.length > 0 && (
+          <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm">
+            <div className="font-semibold text-amber-800">📝 You have {pendingForms.length} form{pendingForms.length > 1 ? "s" : ""} to fill out</div>
+            <ul className="mt-1 space-y-0.5">
+              {pendingForms.map((f) => <li key={f.id}><Link href={`/forms/${f.id}`} className="underline">{f.title}</Link>{f.due_at && <span className="text-amber-700"> · due {fmtDateTime(f.due_at)}</span>}</li>)}
+            </ul>
+          </div>
+        )}
         {!announcements?.length && <p className="text-slate-500">No announcements yet.</p>}
         <div className="space-y-3">
           {announcements?.map((a) => (
@@ -35,12 +45,12 @@ export default async function DashboardPage() {
         </div>
       </section>
       <aside>
-        <h2 className="font-semibold mb-3">Upcoming practices</h2>
-        {!practices?.length && <p className="text-sm text-slate-500">Nothing scheduled.</p>}
+        <h2 className="font-semibold mb-3">Upcoming events</h2>
+        {!events?.length && <p className="text-sm text-slate-500">Nothing scheduled.</p>}
         <ul className="space-y-2">
-          {practices?.map((p) => (
+          {events?.map((p) => (
             <li key={p.id}>
-              <Link href={`/practices/${p.id}`} className="card block hover:border-sky-400">
+              <Link href={`/events/${p.id}`} className="card block hover:border-sky-400">
                 <div className="font-medium text-sm">{p.title}</div>
                 <div className="text-xs text-slate-500">{fmtDateTime(p.starts_at)}{p.location_name && ` · ${p.location_name}`}</div>
               </Link>

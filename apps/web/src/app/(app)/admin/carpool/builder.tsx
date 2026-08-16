@@ -10,8 +10,8 @@ const RouteMap = dynamic(() => import("@/components/route-map"), { ssr: false })
 export type SavedCarpool = { data: { cars: Car[]; mode: Mode }; published: boolean };
 const COLORS = ["#2563eb", "#dc2626", "#16a34a", "#d97706", "#7c3aed", "#db2777", "#0891b2", "#65a30d"];
 
-export default function CarpoolBuilder({ practiceId, destination, riders, drivers, needsRide, saved }: {
-  practiceId: string; destination: Destination; riders: Record<string, Rider>; drivers: { id: string; seats: number }[]; needsRide: string[]; saved: SavedCarpool | null;
+export default function CarpoolBuilder({ eventId, destination, riders, drivers, needsRide, saved }: {
+  eventId: string; destination: Destination; riders: Record<string, Rider>; drivers: { id: string; seats: number }[]; needsRide: string[]; saved: SavedCarpool | null;
 }) {
   const initialCars = useMemo<Car[]>(() => {
     // Start from saved cars, but drop drivers who no longer RSVP'd as drivers and add new ones.
@@ -73,7 +73,7 @@ export default function CarpoolBuilder({ practiceId, destination, riders, driver
   const setCap = (carId: string, cap: number) => setCars((cs) => cs.map((c) => (c.id === carId ? { ...c, capacity: Math.max(1, cap) } : c)));
 
   const save = (published: boolean) => start(async () => {
-    const r = await saveCarpool(practiceId, { cars, mode }, published);
+    const r = await saveCarpool(eventId, { cars, mode }, published);
     setMsg("error" in r && r.error ? r.error : published ? "Saved & published to members" : "Saved draft");
   });
 
@@ -83,7 +83,7 @@ export default function CarpoolBuilder({ practiceId, destination, riders, driver
     <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
       <div className="space-y-3">
         <div className="card flex flex-wrap gap-2 text-sm">
-          <select value={mode} onChange={(e) => setMode(e.target.value as Mode)} className="input w-auto py-1"><option value="pickup">Pickup → practice</option><option value="dropoff">Practice → dropoff</option></select>
+          <select value={mode} onChange={(e) => setMode(e.target.value as Mode)} className="input w-auto py-1"><option value="pickup">Pickup → event</option><option value="dropoff">Event → dropoff</option></select>
           <button type="button" onClick={optimize} className="btn-primary py-1">Optimize</button>
           <button type="button" onClick={() => save(false)} disabled={pending} className="btn-secondary py-1">Save</button>
           <button type="button" onClick={() => save(true)} disabled={pending} className="btn-secondary py-1">Publish</button>

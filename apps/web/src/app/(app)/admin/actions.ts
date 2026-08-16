@@ -35,13 +35,14 @@ export async function togglePin(fd: FormData) {
   revalidatePath("/dashboard"); revalidatePath("/admin/announcements");
 }
 
-export async function createPractice(_: AdminState, fd: FormData): Promise<AdminState> {
+export async function createEvent(_: AdminState, fd: FormData): Promise<AdminState> {
   const { org, userId } = await requireAdmin();
   const supabase = await createClient();
   const starts = iso(fd.get("starts_at"));
   if (!starts) return { error: "Start time is required" };
-  const { error } = await supabase.from("practices").insert({
+  const { error } = await supabase.from("events").insert({
     org_id: org.id, created_by: userId,
+    kind: (str(fd.get("kind")) ?? "practice") as "practice" | "race" | "social" | "other",
     title: String(fd.get("title")).trim(),
     starts_at: starts, ends_at: iso(fd.get("ends_at")), rsvp_deadline: iso(fd.get("rsvp_deadline")),
     location_name: str(fd.get("location_name")),
@@ -50,15 +51,15 @@ export async function createPractice(_: AdminState, fd: FormData): Promise<Admin
     notes: str(fd.get("notes")),
   });
   if (error) return { error: error.message };
-  revalidatePath("/practices"); revalidatePath("/dashboard"); revalidatePath("/admin/practices");
+  revalidatePath("/events"); revalidatePath("/dashboard"); revalidatePath("/admin/events");
   return { ok: true };
 }
 
-export async function deletePractice(fd: FormData) {
+export async function deleteEvent(fd: FormData) {
   await requireAdmin();
   const supabase = await createClient();
-  await supabase.from("practices").delete().eq("id", String(fd.get("id")));
-  revalidatePath("/practices"); revalidatePath("/dashboard"); revalidatePath("/admin/practices");
+  await supabase.from("events").delete().eq("id", String(fd.get("id")));
+  revalidatePath("/events"); revalidatePath("/dashboard"); revalidatePath("/admin/events");
 }
 
 export async function setMemberRole(fd: FormData) {
@@ -78,4 +79,26 @@ export async function removeMember(fd: FormData) {
   const supabase = await createClient();
   await supabase.from("memberships").delete().eq("org_id", org.id).eq("user_id", target);
   revalidatePath("/admin/members");
+}
+
+export async function addPickupLocation(_: AdminState, fd: FormData): Promise<AdminState> {
+  const { org } = await requireAdmin();
+  const supabase = await createClient();
+  const name = String(fd.get("name") ?? "").trim();
+  if (!name) return { error: "Name is required" };
+  const lat = str(fd.get("lat")), lon = str(fd.get("lon"));
+  const { error } = await supabase.from("pickup_locations").insert({
+    org_id: org.id, name, lat: lat ? Number(lat) : null, lon: lon ? Number(lon) : null,
+    sort_order: Number(fd.get("sort_order") ?? 0) || 0,
+  });
+  if (error) return { error: error.message };
+  revalidatePath("/admin/settings");
+  return { ok: true };
+}
+
+export async function deletePickupLocation(fd: FormData) {
+  await requireAdmin();
+  const supabase = await createClient();
+  await supabase.from("pickup_locations").delete().eq("id", String(fd.get("id")));
+  revalidatePath("/admin/settings");
 }

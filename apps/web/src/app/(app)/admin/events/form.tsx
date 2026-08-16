@@ -1,15 +1,20 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { createPractice, type AdminState } from "../actions";
+import { createEvent, type AdminState } from "../actions";
 
-export default function PracticeForm() {
-  const [state, action, pending] = useActionState<AdminState, FormData>(createPractice, {});
+export default function EventForm() {
+  const [state, action, pending] = useActionState<AdminState, FormData>(createEvent, {});
   const ref = useRef<HTMLFormElement>(null);
   useEffect(() => { if (state.ok) ref.current?.reset(); }, [state]);
   return (
     <form ref={ref} action={action} className="card space-y-3">
-      <input name="title" required placeholder="Title (e.g. Saturday practice)" className="input" />
+      <div className="grid grid-cols-[1fr_140px] gap-3">
+        <input name="title" required placeholder="Title (e.g. Saturday practice)" className="input" />
+        <select name="kind" defaultValue="practice" className="input">
+          <option value="practice">Practice</option><option value="race">Race</option><option value="social">Social</option><option value="other">Other</option>
+        </select>
+      </div>
       <div className="grid grid-cols-2 gap-3">
         <div><label className="label">Starts</label><input name="starts_at" type="datetime-local" required className="input" /></div>
         <div><label className="label">Ends</label><input name="ends_at" type="datetime-local" className="input" /></div>

@@ -50,9 +50,22 @@ export type Announcement = {
   created_at: string;
 };
 
-export type Practice = {
+export type EventKind = "practice" | "race" | "social" | "other";
+
+export type PickupLocation = {
   id: string;
   org_id: string;
+  name: string;
+  lat: number | null;
+  lon: number | null;
+  sort_order: number;
+  active: boolean;
+};
+
+export type Event = {
+  id: string;
+  org_id: string;
+  kind: EventKind;
   title: string;
   starts_at: string;
   ends_at: string | null;
@@ -65,20 +78,62 @@ export type Practice = {
   created_at: string;
 };
 
+export type RideChoice = "none" | "driver" | "self" | "needs_ride";
+
 export type Rsvp = {
-  practice_id: string;
+  event_id: string;
   user_id: string;
   status: "yes" | "no" | "maybe";
-  ride: "none" | "driver" | "needs_ride";
+  ride: RideChoice;
   seats: number | null;
+  pickup_location_id: string | null;
+  pickup_address: string | null;
   note: string | null;
+  form_id: string | null;
   updated_at: string;
+};
+
+export type QuestionType = "short_text" | "long_text" | "single_choice" | "multi_choice" | "yes_no" | "number";
+export type FormQuestion = {
+  id: string;
+  type: QuestionType;
+  label: string;
+  help?: string;
+  required?: boolean;
+  options?: string[];
+};
+
+export type Form = {
+  id: string;
+  org_id: string;
+  title: string;
+  description: string;
+  due_at: string | null;
+  status: "draft" | "open" | "closed";
+  questions: Json;   // FormQuestion[]
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type FormEvent = {
+  form_id: string;
+  event_id: string;
+  sort_order: number;
+  prompt: string | null;
+};
+
+export type FormResponse = {
+  form_id: string;
+  user_id: string;
+  answers: Json;     // Record<questionId, string | string[] | number | boolean>
+  submitted_at: string;
 };
 
 export type LineupRow = {
   id: string;
   org_id: string;
-  practice_id: string | null;
+  event_id: string | null;
   name: string;
   boat_type: "open" | "womens" | "mixed";
   data: Json;
@@ -90,7 +145,7 @@ export type LineupRow = {
 export type CarpoolRow = {
   id: string;
   org_id: string;
-  practice_id: string;
+  event_id: string;
   data: Json;
   published: boolean;
   updated_at: string;
@@ -129,31 +184,68 @@ export type Database = {
           { foreignKeyName: "announcements_author_id_fkey"; columns: ["author_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
         ];
       };
-      practices: {
-        Row: Row<Practice>;
-        Insert: Insert<Practice, "id" | "ends_at" | "location_name" | "location_lat" | "location_lon" | "notes" | "rsvp_deadline" | "created_by" | "created_at">;
-        Update: Partial<Practice>;
+      pickup_locations: {
+        Row: Row<PickupLocation>;
+        Insert: Insert<PickupLocation, "id" | "lat" | "lon" | "sort_order" | "active">;
+        Update: Partial<PickupLocation>;
         Relationships: [
-          { foreignKeyName: "practices_org_id_fkey"; columns: ["org_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },
-          { foreignKeyName: "practices_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "pickup_locations_org_id_fkey"; columns: ["org_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },
+        ];
+      };
+      events: {
+        Row: Row<Event>;
+        Insert: Insert<Event, "id" | "kind" | "ends_at" | "location_name" | "location_lat" | "location_lon" | "notes" | "rsvp_deadline" | "created_by" | "created_at">;
+        Update: Partial<Event>;
+        Relationships: [
+          { foreignKeyName: "events_org_id_fkey"; columns: ["org_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },
+          { foreignKeyName: "events_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ];
+      };
+      forms: {
+        Row: Row<Form>;
+        Insert: Insert<Form, "id" | "description" | "due_at" | "status" | "questions" | "created_by" | "created_at" | "updated_at">;
+        Update: Partial<Form>;
+        Relationships: [
+          { foreignKeyName: "forms_org_id_fkey"; columns: ["org_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },
+          { foreignKeyName: "forms_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ];
+      };
+      form_events: {
+        Row: Row<FormEvent>;
+        Insert: Insert<FormEvent, "sort_order" | "prompt">;
+        Update: Partial<FormEvent>;
+        Relationships: [
+          { foreignKeyName: "form_events_form_id_fkey"; columns: ["form_id"]; isOneToOne: false; referencedRelation: "forms"; referencedColumns: ["id"] },
+          { foreignKeyName: "form_events_event_id_fkey"; columns: ["event_id"]; isOneToOne: false; referencedRelation: "events"; referencedColumns: ["id"] },
+        ];
+      };
+      form_responses: {
+        Row: Row<FormResponse>;
+        Insert: Insert<FormResponse, "answers" | "submitted_at">;
+        Update: Partial<FormResponse>;
+        Relationships: [
+          { foreignKeyName: "form_responses_form_id_fkey"; columns: ["form_id"]; isOneToOne: false; referencedRelation: "forms"; referencedColumns: ["id"] },
+          { foreignKeyName: "form_responses_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
         ];
       };
       rsvps: {
         Row: Row<Rsvp>;
-        Insert: Insert<Rsvp, "ride" | "seats" | "note" | "updated_at">;
+        Insert: Insert<Rsvp, "ride" | "seats" | "pickup_location_id" | "pickup_address" | "note" | "form_id" | "updated_at">;
         Update: Partial<Rsvp>;
         Relationships: [
-          { foreignKeyName: "rsvps_practice_id_fkey"; columns: ["practice_id"]; isOneToOne: false; referencedRelation: "practices"; referencedColumns: ["id"] },
+          { foreignKeyName: "rsvps_event_id_fkey"; columns: ["event_id"]; isOneToOne: false; referencedRelation: "events"; referencedColumns: ["id"] },
           { foreignKeyName: "rsvps_user_id_fkey"; columns: ["user_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "rsvps_pickup_location_id_fkey"; columns: ["pickup_location_id"]; isOneToOne: false; referencedRelation: "pickup_locations"; referencedColumns: ["id"] },
+          { foreignKeyName: "rsvps_form_id_fkey"; columns: ["form_id"]; isOneToOne: false; referencedRelation: "forms"; referencedColumns: ["id"] },
         ];
       };
       lineups: {
         Row: Row<LineupRow>;
-        Insert: Insert<LineupRow, "id" | "practice_id" | "boat_type" | "data" | "published" | "created_by" | "updated_at">;
+        Insert: Insert<LineupRow, "id" | "event_id" | "boat_type" | "data" | "published" | "created_by" | "updated_at">;
         Update: Partial<LineupRow>;
         Relationships: [
           { foreignKeyName: "lineups_org_id_fkey"; columns: ["org_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },
-          { foreignKeyName: "lineups_practice_id_fkey"; columns: ["practice_id"]; isOneToOne: false; referencedRelation: "practices"; referencedColumns: ["id"] },
+          { foreignKeyName: "lineups_event_id_fkey"; columns: ["event_id"]; isOneToOne: false; referencedRelation: "events"; referencedColumns: ["id"] },
         ];
       };
       carpools: {
@@ -162,7 +254,7 @@ export type Database = {
         Update: Partial<CarpoolRow>;
         Relationships: [
           { foreignKeyName: "carpools_org_id_fkey"; columns: ["org_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },
-          { foreignKeyName: "carpools_practice_id_fkey"; columns: ["practice_id"]; isOneToOne: false; referencedRelation: "practices"; referencedColumns: ["id"] },
+          { foreignKeyName: "carpools_event_id_fkey"; columns: ["event_id"]; isOneToOne: false; referencedRelation: "events"; referencedColumns: ["id"] },
         ];
       };
     };

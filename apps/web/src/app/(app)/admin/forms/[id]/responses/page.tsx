@@ -1,0 +1,104 @@
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { requireAdmin } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
+import { fmtDateTime } from "@/lib/format";
+import { toChoice, ATTENDANCE_OPTIONS } from "@/lib/attendance";
+import type { FormQuestion, Profile, Rsvp } from "@/lib/database.types";
+import ExportCsv from "./export-csv";
+
+const choiceLabel = Object.fromEntries(ATTENDANCE_OPTIONS.map((o) => [o.value, o.label.replace(/ [^\w\s]+$/u, "")]));
+
+export default async function FormResponsesPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const { org } = await requireAdmin();
+  const supabase = await createClient();
+  const [{ data: form }, { data: links }, { data: responses }, { data: members }, { data: pickups }] = await Promise.all([
+    supabase.from("forms").select("*").eq("id", id).eq("org_id", org.id).maybeSingle(),
+    supabase.from("form_events").select("*, event:events(*)").eq("form_id", id).order("sort_order"),
+    supabase.from("form_responses").select("*").eq("form_id", id),
+    supabase.from("memberships").select("profile:profiles(*)").eq("org_id", org.id),
+    supabase.from("pickup_locations").select("id, name").eq("org_id", org.id),
+  ]);
+  if (!form) notFound();
+  const events = (links ?? []).map((l) => l.event).filter(Boolean) as { id: string; title: string; starts_at: string }[];
+  const { data: rsvps } = events.length
+    ? await supabase.from("rsvps").select("*").in("event_id", events.map((e) => e.id))
+    : { data: [] as Rsvp[] };
+  const rsvpBy = new Map<string, Rsvp>();
+  for (const r of rsvps ?? []) rsvpBy.set(`${r.event_id}:${r.user_id}`, r);
+  const pickupName = new Map((pickups ?? []).map((p) => [p.id, p.name]));
+  const questions = ((form.questions as unknown as FormQuestion[]) ?? []);
+  const profiles = (members ?? []).map((m) => m.profile as unknown as Profile).filter(Boolean).sort((a, b) => a.full_name.localeCompare(b.full_name));
+  const respBy = new Map((responses ?? []).map((r) => [r.user_id, r]));
+  const responded = profiles.filter((p) => respBy.has(p.id));
+  const missing = profiles.filter((p) => !respBy.has(p.id));
+
+  const rideCell = (r: Rsvp | undefined) => {
+    if (!r) return "";
+    const c = toChoice(r); let s = choiceLabel[c ?? ""] ?? "";
+    if (r.ride === "driver") s += ` (${r.seats ?? "?"} seats)`;
+    if (r.ride === "needs_ride") s += ` @ ${r.pickup_location_id ? pickupName.get(r.pickup_location_id) ?? "?" : r.pickup_address ?? "home"}`;
+    if (r.note) s += ` — ${r.note}`;
+    return s;
+  };
+  const ansCell = (uid: string, q: FormQuestion) => {
+    const a = (respBy.get(uid)?.answers as Record<string, unknown> | null)?.[q.id];
+    if (a == null || a === "") return "";
+    if (Array.isArray(a)) return a.join(", ");
+    if (typeof a === "boolean") return a ? "Yes" : "No";
+    return String(a);
+  };
+
+  const header = ["Name", "Email", "Weight (kg)", "Phone", ...events.map((e) => e.title), ...questions.map((q) => q.label), "Submitted"];
+  const rows = responded.map((p) => [p.full_name, p.email, p.weight_kg ?? "", p.phone ?? "", ...events.map((e) => rideCell(rsvpBy.get(`${e.id}:${p.id}`))), ...questions.map((q) => ansCell(p.id, q)), fmtDateTime(respBy.get(p.id)!.submitted_at)]);
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h1 className="text-2xl font-bold">{form.title}</h1>
+          <p className="text-sm text-slate-500">{responded.length}/{profiles.length} responded{form.due_at && ` · due ${fmtDateTime(form.due_at)}`} · <Link href={`/admin/forms/${id}`} className="underline">edit</Link></p>
+        </div>
+        <ExportCsv filename={`${form.title}.csv`} header={header} rows={rows.map((r) => r.map(String))} />
+      </div>
+
+      {events.length > 0 && (
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {events.map((e) => {
+            const rs = profiles.map((p) => rsvpBy.get(`${e.id}:${p.id}`)).filter(Boolean) as Rsvp[];
+            const n = (f: (r: Rsvp) => boolean) => rs.filter(f).length;
+            const seats = rs.filter((r) => r.ride === "driver").reduce((a, r) => a + (r.seats ?? 0), 0);
+            return (
+              <div key={e.id} className="card text-sm">
+                <div className="font-medium"><Link href={`/events/${e.id}`} className="hover:underline">{e.title}</Link></div>
+                <div className="text-xs text-slate-500">{fmtDateTime(e.starts_at)}</div>
+                <div className="mt-2 grid grid-cols-2 gap-x-3 text-xs">
+                  <span>✅ Yes: <b>{n((r) => r.status === "yes")}</b></span><span>🤔 Maybe: {n((r) => r.status === "maybe")}</span>
+                  <span>❌ No: {n((r) => r.status === "no")}</span><span>🙋 Need ride: <b>{n((r) => r.ride === "needs_ride")}</b></span>
+                  <span>👑 Drivers: {n((r) => r.ride === "driver")}</span><span>💺 Seats: <b>{seats}</b></span>
+                </div>
+                <div className="mt-2 flex gap-3 text-xs"><Link href={`/admin/lineups?event=${e.id}`} className="underline">Lineups</Link><Link href={`/admin/carpool?event=${e.id}`} className="underline">Carpool</Link></div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <div className="card p-0 overflow-x-auto">
+        <table className="w-full text-xs">
+          <thead className="bg-slate-50 text-left text-slate-500"><tr>{header.map((h) => <th key={h} className="p-2 whitespace-nowrap">{h}</th>)}</tr></thead>
+          <tbody>
+            {rows.map((r, i) => <tr key={i} className="border-t border-slate-100">{r.map((c, j) => <td key={j} className="p-2 align-top max-w-[220px]">{String(c)}</td>)}</tr>)}
+            {!rows.length && <tr><td className="p-3 text-slate-400" colSpan={header.length}>No responses yet.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="card text-sm">
+        <h3 className="font-semibold mb-1">Haven’t responded ({missing.length})</h3>
+        <p className="text-slate-600">{missing.map((p) => p.full_name || p.email).join(", ") || "Everyone has responded 🎉"}</p>
+      </div>
+    </div>
+  );
+}

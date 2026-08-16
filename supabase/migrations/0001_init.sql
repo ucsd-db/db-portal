@@ -90,10 +90,23 @@ create table public.announcements (
 );
 create index on public.announcements (org_id, pinned desc, created_at desc);
 
--- ---------- practices / events + attendance (rsvps) ----------
-create table public.practices (
+-- ---------- pickup locations (e.g. campus colleges) ----------
+create table public.pickup_locations (
+  id         uuid primary key default gen_random_uuid(),
+  org_id     uuid not null references public.organizations(id) on delete cascade,
+  name       text not null,
+  lat        double precision,
+  lon        double precision,
+  sort_order int not null default 0,
+  active     boolean not null default true
+);
+create index on public.pickup_locations (org_id, sort_order);
+
+-- ---------- events (practices, races, socials) + attendance (rsvps) ----------
+create table public.events (
   id             uuid primary key default gen_random_uuid(),
   org_id         uuid not null references public.organizations(id) on delete cascade,
+  kind           text not null default 'practice' check (kind in ('practice','race','social','other')),
   title          text not null,
   starts_at      timestamptz not null,
   ends_at        timestamptz,
@@ -105,25 +118,65 @@ create table public.practices (
   created_by     uuid references public.profiles(id) on delete set null,
   created_at     timestamptz not null default now()
 );
-create index on public.practices (org_id, starts_at);
+create index on public.events (org_id, starts_at);
+
+-- ---------- forms (weekly practice form, race logistics form, ...) ----------
+-- A form bundles: a description, a due date, one or more events (each gets the
+-- standard attendance+ride question), and custom questions (jsonb array of
+-- { id, type: short_text|long_text|single_choice|multi_choice|yes_no|number,
+--   label, help?, required?, options?[] }).
+create table public.forms (
+  id          uuid primary key default gen_random_uuid(),
+  org_id      uuid not null references public.organizations(id) on delete cascade,
+  title       text not null,
+  description text not null default '',
+  due_at      timestamptz,
+  status      text not null default 'draft' check (status in ('draft','open','closed')),
+  questions   jsonb not null default '[]'::jsonb,
+  created_by  uuid references public.profiles(id) on delete set null,
+  created_at  timestamptz not null default now(),
+  updated_at  timestamptz not null default now()
+);
+create index on public.forms (org_id, status, due_at);
+
+create table public.form_events (
+  form_id    uuid not null references public.forms(id) on delete cascade,
+  event_id   uuid not null references public.events(id) on delete cascade,
+  sort_order int not null default 0,
+  prompt     text,          -- optional override for "Will you be attending X?"
+  primary key (form_id, event_id)
+);
+
+-- One response per user per form; resubmitting overwrites (latest wins).
+create table public.form_responses (
+  form_id      uuid not null references public.forms(id) on delete cascade,
+  user_id      uuid not null references public.profiles(id) on delete cascade,
+  answers      jsonb not null default '{}'::jsonb,   -- { [questionId]: value }
+  submitted_at timestamptz not null default now(),
+  primary key (form_id, user_id)
+);
 
 create table public.rsvps (
-  practice_id uuid not null references public.practices(id) on delete cascade,
+  event_id    uuid not null references public.events(id) on delete cascade,
   user_id     uuid not null references public.profiles(id) on delete cascade,
   status      text not null check (status in ('yes','no','maybe')),
-  -- ride coordination for this specific practice
-  ride        text not null default 'none' check (ride in ('none','driver','needs_ride')),
+  -- ride coordination for this specific event
+  --   driver = drives self AND others; self = own ride, no passengers; needs_ride
+  ride        text not null default 'none' check (ride in ('none','driver','self','needs_ride')),
   seats       int check (seats between 1 and 15),
+  pickup_location_id uuid references public.pickup_locations(id) on delete set null,
+  pickup_address text,       -- custom pickup spot (falls back to profile address if null)
   note        text,
+  form_id     uuid references public.forms(id) on delete set null,   -- which form it came through
   updated_at  timestamptz not null default now(),
-  primary key (practice_id, user_id)
+  primary key (event_id, user_id)
 );
 
 -- ---------- lineups & carpools (algorithm state stored as jsonb) ----------
 create table public.lineups (
   id          uuid primary key default gen_random_uuid(),
   org_id      uuid not null references public.organizations(id) on delete cascade,
-  practice_id uuid references public.practices(id) on delete set null,
+  event_id    uuid references public.events(id) on delete set null,
   name        text not null,
   boat_type   text not null default 'open' check (boat_type in ('open','womens','mixed')),
   data        jsonb not null default '{}'::jsonb,   -- @db/lineup Lineup shape
@@ -131,16 +184,16 @@ create table public.lineups (
   created_by  uuid references public.profiles(id) on delete set null,
   updated_at  timestamptz not null default now()
 );
-create index on public.lineups (org_id, practice_id);
+create index on public.lineups (org_id, event_id);
 
 create table public.carpools (
   id          uuid primary key default gen_random_uuid(),
   org_id      uuid not null references public.organizations(id) on delete cascade,
-  practice_id uuid not null references public.practices(id) on delete cascade,
+  event_id    uuid not null references public.events(id) on delete cascade,
   data        jsonb not null default '{}'::jsonb,   -- @db/carpool { cars, unassigned, mode }
   published   boolean not null default false,
   updated_at  timestamptz not null default now(),
-  unique (practice_id)
+  unique (event_id)
 );
 
 -- ---------- RPCs ----------
@@ -172,7 +225,11 @@ alter table public.profiles      enable row level security;
 alter table public.organizations enable row level security;
 alter table public.memberships   enable row level security;
 alter table public.announcements enable row level security;
-alter table public.practices     enable row level security;
+alter table public.pickup_locations enable row level security;
+alter table public.events        enable row level security;
+alter table public.forms         enable row level security;
+alter table public.form_events   enable row level security;
+alter table public.form_responses enable row level security;
 alter table public.rsvps         enable row level security;
 alter table public.lineups       enable row level security;
 alter table public.carpools      enable row level security;
@@ -205,20 +262,50 @@ create policy "announcements member read" on public.announcements
 create policy "announcements admin write" on public.announcements
   for all using (public.is_org_admin(org_id)) with check (public.is_org_admin(org_id));
 
--- practices: members read; admins write
-create policy "practices member read" on public.practices
+-- pickup locations: members read; admins write
+create policy "pickups member read" on public.pickup_locations
   for select using (public.is_org_member(org_id));
-create policy "practices admin write" on public.practices
+create policy "pickups admin write" on public.pickup_locations
   for all using (public.is_org_admin(org_id)) with check (public.is_org_admin(org_id));
 
--- rsvps: members read all rsvps in their org's practices; write own
+-- events: members read; admins write
+create policy "events member read" on public.events
+  for select using (public.is_org_member(org_id));
+create policy "events admin write" on public.events
+  for all using (public.is_org_admin(org_id)) with check (public.is_org_admin(org_id));
+
+-- forms: members read open/closed forms; admins everything
+create policy "forms member read" on public.forms
+  for select using (status <> 'draft' and public.is_org_member(org_id));
+create policy "forms admin all" on public.forms
+  for all using (public.is_org_admin(org_id)) with check (public.is_org_admin(org_id));
+
+create policy "form_events member read" on public.form_events
+  for select using (exists (select 1 from forms f where f.id = form_id and public.is_org_member(f.org_id)));
+create policy "form_events admin write" on public.form_events
+  for all using (exists (select 1 from forms f where f.id = form_id and public.is_org_admin(f.org_id)))
+  with check (exists (select 1 from forms f where f.id = form_id and public.is_org_admin(f.org_id)));
+
+-- form responses: own read/write (only while form is open); admins read all
+create policy "responses self" on public.form_responses
+  for all using (user_id = auth.uid()) with check (
+    user_id = auth.uid()
+    and exists (select 1 from forms f where f.id = form_id and f.status = 'open' and public.is_org_member(f.org_id))
+  );
+create policy "responses admin read" on public.form_responses
+  for select using (exists (select 1 from forms f where f.id = form_id and public.is_org_admin(f.org_id)));
+
+-- rsvps: members read all rsvps in their org's events; write own; admins can edit any
 create policy "rsvps member read" on public.rsvps
-  for select using (exists (select 1 from practices p where p.id = practice_id and public.is_org_member(p.org_id)));
+  for select using (exists (select 1 from events e where e.id = event_id and public.is_org_member(e.org_id)));
 create policy "rsvps self write" on public.rsvps
   for all using (user_id = auth.uid()) with check (
     user_id = auth.uid()
-    and exists (select 1 from practices p where p.id = practice_id and public.is_org_member(p.org_id))
+    and exists (select 1 from events e where e.id = event_id and public.is_org_member(e.org_id))
   );
+create policy "rsvps admin write" on public.rsvps
+  for all using (exists (select 1 from events e where e.id = event_id and public.is_org_admin(e.org_id)))
+  with check (exists (select 1 from events e where e.id = event_id and public.is_org_admin(e.org_id)));
 
 -- lineups: admins full; members read published
 create policy "lineups admin all" on public.lineups
@@ -239,5 +326,6 @@ begin new.updated_at = now(); return new; end $$;
 
 create trigger profiles_touch before update on public.profiles for each row execute function public.touch_updated_at();
 create trigger rsvps_touch    before update on public.rsvps    for each row execute function public.touch_updated_at();
+create trigger forms_touch    before update on public.forms    for each row execute function public.touch_updated_at();
 create trigger lineups_touch  before update on public.lineups  for each row execute function public.touch_updated_at();
 create trigger carpools_touch before update on public.carpools for each row execute function public.touch_updated_at();

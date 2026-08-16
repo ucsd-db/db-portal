@@ -12,7 +12,7 @@ import { deleteLineup, saveLineup } from "./actions";
 type Initial = { id: string; name: string; boatType: BoatType; published: boolean; data: Lineup } | null;
 type Sel = { kind: "seat"; seat: Seat } | { kind: "roster"; id: string } | null;
 
-export default function LineupBuilder({ roster, practiceId, initial }: { roster: Roster; practiceId: string | null; initial: Initial }) {
+export default function LineupBuilder({ roster, eventId, initial }: { roster: Roster; eventId: string | null; initial: Initial }) {
   const router = useRouter();
   const [id, setId] = useState(initial?.id ?? null);
   const [name, setName] = useState(initial?.name ?? "Boat 1");
@@ -53,11 +53,11 @@ export default function LineupBuilder({ roster, practiceId, initial }: { roster:
   const clear = () => setLineup(emptyLineup(lineup.boatType));
 
   const save = (pub = published) => start(async () => {
-    const r = await saveLineup({ id, practiceId, name, boatType: lineup.boatType, data: lineup, published: pub });
+    const r = await saveLineup({ id, eventId, name, boatType: lineup.boatType, data: lineup, published: pub });
     if ("error" in r && r.error) { setError(r.error); return; }
     if ("id" in r && r.id) { setId(r.id); setPublished(pub); setMsg(pub ? "Saved & published" : "Saved"); router.refresh(); }
   });
-  const del = () => { if (id && confirm("Delete this lineup?")) start(async () => { await deleteLineup(id); router.push(`/admin/lineups${practiceId ? `?practice=${practiceId}` : ""}`); }); };
+  const del = () => { if (id && confirm("Delete this lineup?")) start(async () => { await deleteLineup(id); router.push(`/admin/lineups${eventId ? `?event=${eventId}` : ""}`); }); };
   const copy = () => navigator.clipboard.writeText(toMastersheet([{ name, lineup }], roster)).then(() => setMsg("Copied mastersheet (paste into a spreadsheet)"));
 
   const isSel = (seat: Seat) => sel?.kind === "seat" && seatKey(sel.seat) === seatKey(seat);
@@ -101,7 +101,7 @@ export default function LineupBuilder({ roster, practiceId, initial }: { roster:
       </div>
       <aside className="card space-y-2 self-start">
         <div className="flex items-baseline justify-between"><h3 className="font-semibold text-sm">Available ({bench.length})</h3>
-          {practiceId ? <span className="text-[11px] text-slate-500">yes/maybe RSVPs</span> : <span className="text-[11px] text-slate-500">whole team</span>}</div>
+          {eventId ? <span className="text-[11px] text-slate-500">yes/maybe RSVPs</span> : <span className="text-[11px] text-slate-500">whole team</span>}</div>
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" className="input py-1" />
         <p className="text-[11px] text-slate-500">Click a paddler, then a seat. Click two seats to swap. Select a seat then click here to unseat.</p>
         <ul className="max-h-[60vh] overflow-y-auto divide-y divide-slate-100 text-sm">
