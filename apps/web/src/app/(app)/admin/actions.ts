@@ -6,7 +6,6 @@ import { createClient } from "@/lib/supabase/server";
 
 export type AdminState = { error?: string; ok?: boolean };
 const str = (v: FormDataEntryValue | null) => (v === null || String(v).trim() === "" ? null : String(v).trim());
-const iso = (v: FormDataEntryValue | null) => (str(v) ? new Date(String(v)).toISOString() : null);
 
 export async function createAnnouncement(_: AdminState, fd: FormData): Promise<AdminState> {
   const { org, userId } = await requireAdmin();
@@ -33,26 +32,6 @@ export async function togglePin(fd: FormData) {
   const supabase = await createClient();
   await supabase.from("announcements").update({ pinned: fd.get("pinned") === "true" }).eq("id", String(fd.get("id")));
   revalidatePath("/dashboard"); revalidatePath("/admin/announcements");
-}
-
-export async function createEvent(_: AdminState, fd: FormData): Promise<AdminState> {
-  const { org, userId } = await requireAdmin();
-  const supabase = await createClient();
-  const starts = iso(fd.get("starts_at"));
-  if (!starts) return { error: "Start time is required" };
-  const { error } = await supabase.from("events").insert({
-    org_id: org.id, created_by: userId,
-    kind: (str(fd.get("kind")) ?? "practice") as "practice" | "race" | "social" | "other",
-    title: String(fd.get("title")).trim(),
-    starts_at: starts, ends_at: iso(fd.get("ends_at")), rsvp_deadline: iso(fd.get("rsvp_deadline")),
-    location_name: str(fd.get("location_name")),
-    location_lat: str(fd.get("location_lat")) ? Number(fd.get("location_lat")) : null,
-    location_lon: str(fd.get("location_lon")) ? Number(fd.get("location_lon")) : null,
-    notes: str(fd.get("notes")),
-  });
-  if (error) return { error: error.message };
-  revalidatePath("/events"); revalidatePath("/dashboard"); revalidatePath("/admin/events");
-  return { ok: true };
 }
 
 export async function deleteEvent(fd: FormData) {
@@ -101,4 +80,23 @@ export async function deletePickupLocation(fd: FormData) {
   const supabase = await createClient();
   await supabase.from("pickup_locations").delete().eq("id", String(fd.get("id")));
   revalidatePath("/admin/settings");
+}
+
+/** Create one event per entry (used by the "add practice days" widget). Returns created ids in input order. */
+export async function createEventsBatch(input: {
+  kind: "practice" | "race" | "social" | "other";
+  items: { title: string; starts_at: string; ends_at: string | null; rsvp_deadline: string | null }[];
+  location_name: string | null; location_lat: number | null; location_lon: number | null; notes: string | null;
+}): Promise<{ ids?: string[]; error?: string }> {
+  const { org, userId } = await requireAdmin();
+  if (!input.items.length) return { error: "Add at least one date" };
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("events").insert(input.items.map((it) => ({
+    org_id: org.id, created_by: userId, kind: input.kind, title: it.title, starts_at: it.starts_at, ends_at: it.ends_at, rsvp_deadline: it.rsvp_deadline,
+    location_name: input.location_name, location_lat: input.location_lat, location_lon: input.location_lon, notes: input.notes,
+  }))).select("id, starts_at");
+  if (error) return { error: error.message };
+  revalidatePath("/events"); revalidatePath("/dashboard"); revalidatePath("/admin/events");
+  const order = new Map(input.items.map((it, i) => [it.starts_at, i]));
+  return { ids: (data ?? []).sort((a, b) => (order.get(new Date(a.starts_at).toISOString()) ?? 0) - (order.get(new Date(b.starts_at).toISOString()) ?? 0)).map((d) => d.id) };
 }

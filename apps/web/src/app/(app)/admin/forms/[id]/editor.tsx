@@ -6,6 +6,7 @@ import Link from "next/link";
 import type { FormQuestion, QuestionType } from "@/lib/database.types";
 import { fmtDateTime } from "@/lib/format";
 import { deleteForm, saveForm, type FormPayload } from "../actions";
+import EventBatchForm from "@/components/event-batch-form";
 
 type EventOpt = { id: string; title: string; kind: string; starts_at: string };
 const TYPES: { value: QuestionType; label: string; icon: string }[] = [
@@ -23,6 +24,7 @@ export default function FormEditor({ id, initial, events }: { id: string; initia
   const router = useRouter();
   const [f, setF] = useState<FormPayload>(initial);
   const [focus, setFocus] = useState<string | null>(null);
+  const [addingDays, setAddingDays] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const set = <K extends keyof FormPayload>(k: K, v: FormPayload[K]) => setF((s) => ({ ...s, [k]: v }));
@@ -70,9 +72,17 @@ export default function FormEditor({ id, initial, events }: { id: string; initia
 
       {/* events card */}
       <div className="gf-card space-y-2">
-        <div className="text-base">📅 Events on this form <span className="gf-required">*</span></div>
-        <p className="text-xs" style={{ color: "var(--g-grey-600)" }}>Each checked event gets the standard “Will you be attending?” question (drive others / own ride / need a ride + pickup spot). Answers feed attendance, lineups and carpool.</p>
-        {!events.length && <p className="text-sm" style={{ color: "var(--g-red)" }}>No upcoming events — <Link href="/admin/events" className="underline">create them</Link> first.</p>}
+        <div className="flex items-center justify-between">
+          <div className="text-base">📅 Days / events on this form <span className="gf-required">*</span></div>
+          <button type="button" onClick={() => setAddingDays((v) => !v)} className="btn-text">{addingDays ? "Cancel" : "＋ Add practice days"}</button>
+        </div>
+        <p className="text-xs" style={{ color: "var(--g-grey-600)" }}>Each checked day gets its own “Will you be attending?” question (drive others / own ride / need a ride + pickup spot), so people can answer per day. Answers feed attendance, lineups and carpool.</p>
+        {addingDays && (
+          <div className="rounded-lg border p-3" style={{ borderColor: "var(--g-purple)", background: "var(--g-grey-50)" }}>
+            <EventBatchForm compact onCreated={(ids) => { set("events", [...f.events, ...ids.map((id) => ({ event_id: id, prompt: null }))]); setAddingDays(false); setMsg(`Added ${ids.length} day(s) — remember to Save`); }} />
+          </div>
+        )}
+        {!events.length && !addingDays && <p className="text-sm" style={{ color: "var(--g-red)" }}>No upcoming events yet — click “Add practice days”.</p>}
         {events.map((ev) => {
           const on = f.events.find((e) => e.event_id === ev.id);
           return (

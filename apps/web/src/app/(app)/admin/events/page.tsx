@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { fmtDateTime } from "@/lib/format";
 import { deleteEvent } from "../actions";
-import EventForm from "./form";
+import EventBatchForm from "@/components/event-batch-form";
 
 export default async function AdminEventsPage() {
   const { org } = await requireAdmin();
@@ -13,8 +13,9 @@ export default async function AdminEventsPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <section>
-        <h1 className="text-2xl font-normal mb-3">New event</h1>
-        <EventForm />
+        <h1 className="text-2xl font-normal mb-1">New events</h1>
+        <p className="text-sm mb-3" style={{ color: "var(--g-grey-600)" }}>Pick the dates and type the times — one event is created per date.</p>
+        <EventBatchForm />
       </section>
       <section>
         <h2 className="text-lg font-medium mb-3">All events</h2>
