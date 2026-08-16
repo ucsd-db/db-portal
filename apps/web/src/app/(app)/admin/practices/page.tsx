@@ -1,0 +1,47 @@
+import Link from "next/link";
+import { requireAdmin } from "@/lib/session";
+import { createClient } from "@/lib/supabase/server";
+import { fmtDateTime } from "@/lib/format";
+import { deletePractice } from "../actions";
+import PracticeForm from "./form";
+
+export default async function AdminPracticesPage() {
+  const { org } = await requireAdmin();
+  const supabase = await createClient();
+  const { data: items } = await supabase.from("practices").select("*, rsvps(status)").eq("org_id", org.id)
+    .order("starts_at", { ascending: false }).limit(50);
+  return (
+    <div className="grid gap-6 lg:grid-cols-2">
+      <section>
+        <h1 className="text-2xl font-bold mb-3">New practice / event</h1>
+        <PracticeForm />
+      </section>
+      <section>
+        <h2 className="text-lg font-semibold mb-3">All practices</h2>
+        <ul className="space-y-2">
+          {items?.map((p) => {
+            const r = p.rsvps as { status: string }[];
+            const c = (s: string) => r.filter((x) => x.status === s).length;
+            return (
+              <li key={p.id} className="card text-sm">
+                <div className="flex justify-between gap-2">
+                  <div>
+                    <Link href={`/practices/${p.id}`} className="font-medium hover:underline">{p.title}</Link>
+                    <div className="text-xs text-slate-500">{fmtDateTime(p.starts_at)}</div>
+                    <div className="text-xs text-slate-500">✅ {c("yes")} · 🤔 {c("maybe")} · ❌ {c("no")}</div>
+                  </div>
+                  <div className="flex flex-col items-end gap-1 shrink-0">
+                    <Link href={`/admin/lineups?practice=${p.id}`} className="text-xs underline">Lineups</Link>
+                    <Link href={`/admin/carpool?practice=${p.id}`} className="text-xs underline">Carpool</Link>
+                    <form action={deletePractice}><input type="hidden" name="id" value={p.id} />
+                      <button className="text-xs text-red-600 underline">Delete</button></form>
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+    </div>
+  );
+}
