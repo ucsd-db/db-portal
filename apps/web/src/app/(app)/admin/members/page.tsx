@@ -14,7 +14,7 @@ export default async function AdminMembersPage() {
   ]);
   const members = ((data ?? []) as (Membership & { profile: Profile })[]).sort((a, b) => a.profile.full_name.localeCompare(b.profile.full_name));
   const pend = (pending ?? []) as PendingMember[];
-  const COLS = ["Name", "Email", "Address", "Latitude", "Longitude", "City", "Zipcode", "Drives", "Gender", "W(lb)"];
+  const COLS = ["Name", "Email", "Address", "Latitude", "Longitude", "City", "Zipcode", "Passengers", "Gender", "W(lb)"];
 
   return (
     <div className="space-y-4">
@@ -53,7 +53,7 @@ export default async function AdminMembersPage() {
               <tr key={p.email} style={{ color: "var(--g-grey-600)", background: "#fffbeb" }}>
                 <td className="text-center" style={{ background: "var(--g-grey-100)" }}>{members.length + i + 1}</td>
                 <td>{p.full_name || "—"}</td><td>{p.email}</td><td>{p.address ?? "—"}</td><td>{p.lat ?? "—"}</td><td>{p.lon ?? "—"}</td><td>{p.city ?? "—"}</td><td>{p.zipcode ?? "—"}</td>
-                <td>{p.can_drive ? "Yes" : "No"}</td><td>{p.gender ?? "—"}</td><td>{p.weight_lb ?? "—"}</td>
+                <td>{p.car_passengers}</td><td>{p.gender ?? "—"}</td><td>{p.weight_lb ?? "—"}</td>
                 <td><span className="chip !py-0 text-[10px]" style={{ background: "#fef3c7", borderColor: "transparent", color: "#92400e" }}>pending sign-up</span></td>
                 <td><ConfirmForm action={removePending} message={`Remove pending member ${p.email}?`}><input type="hidden" name="email" value={p.email} /><button className="btn-danger-text py-0.5 text-xs">Remove</button></ConfirmForm></td>
               </tr>

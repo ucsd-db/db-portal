@@ -36,9 +36,9 @@ export default function ProfileForm({ profile: p }: { profile: Profile }) {
             <input name="zipcode" defaultValue={p.zipcode ?? ""} placeholder="Zipcode" className="input" />
           </div>
           <p className="text-xs text-slate-500 mt-1">{p.lat ? `📍 Located (${p.lat.toFixed(3)}, ${p.lon?.toFixed(3)})` : "Not located yet"}</p></div>
-        <div className="flex items-center gap-6 text-sm">
-          <label className="flex items-center gap-2"><input type="checkbox" name="can_drive" defaultChecked={p.can_drive} /> I can usually drive</label>
-          <div className="flex items-center gap-2"><span>Car seats (incl. you)</span><input name="car_seats" type="number" min={1} max={15} defaultValue={p.car_seats ?? ""} className="input w-20" /></div>
+        <div className="text-sm">
+          <label className="label">How many passengers can you drive? (not counting you — 0 if you don’t have a car)</label>
+          <input name="car_passengers" type="number" min={0} max={14} defaultValue={p.car_passengers} className="input w-24" />
         </div>
       </section>
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}

@@ -51,7 +51,7 @@ export default async function FormFillPage({ params }: { params: Promise<{ id: s
 
         {form.status === "open"
           ? <FillForm formId={id} events={events} rsvpBy={Object.fromEntries(rsvpBy)} questions={(form.questions as unknown as FormQuestion[]) ?? []}
-              existingAnswers={(response?.answers as Record<string, unknown> | null) ?? null} pickups={pickups ?? []} defaultSeats={profile.car_seats} weightLb={profile.weight_lb}
+              existingAnswers={(response?.answers as Record<string, unknown> | null) ?? null} pickups={pickups ?? []} defaultSeats={profile.car_passengers} weightLb={profile.weight_lb}
               submittedAt={response?.submitted_at ?? null} />
           : <div className="gf-card text-sm" style={{ color: "var(--g-grey-600)" }}>
               {form.status === "closed" ? "This form is no longer accepting responses." : "This form isn’t open yet."}

@@ -30,7 +30,7 @@ export default async function AdminCarpoolPage({ searchParams }: { searchParams:
         : p.lat != null && p.lon != null ? { lat: p.lat, lon: p.lon } : null;
       const suffix = pk ? ` @ ${pk.name}` : r.pickup_address ? ` @ ${r.pickup_address}` : "";
       riders[p.id] = { id: p.id, name: (p.full_name || p.email) + (r.ride === "needs_ride" ? suffix : ""), location };
-      if (r.ride === "driver") drivers.push({ id: p.id, seats: (r.seats ?? (p.car_seats ? p.car_seats - 1 : 3)) + 1 });
+      if (r.ride === "driver") drivers.push({ id: p.id, seats: (r.seats ?? (p.car_passengers || 3)) + 1 });
       if (r.ride === "needs_ride") needsRide.push(p.id);
     }
     if (cp) saved = { data: cp.data as unknown as { cars: Car[]; mode: "pickup" | "dropoff" }, published: cp.published };
