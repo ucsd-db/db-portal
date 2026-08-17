@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireOrg } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { fmtDateTime } from "@/lib/format";
+import LocalTime from "@/components/local-time";
 
 export default async function FormsPage() {
   const { org, userId } = await requireOrg();
@@ -19,8 +19,8 @@ export default async function FormsPage() {
         <ul className="space-y-2">
           {open.map((f) => { const r = mine(f); return (
             <li key={f.id}><Link href={`/forms/${f.id}`} className="card flex items-center justify-between gap-3 hover:border-sky-400">
-              <div><div className="font-medium">{f.title}</div>{f.due_at && <div className="text-xs text-slate-500">Due {fmtDateTime(f.due_at)}</div>}</div>
-              <div className={`text-sm ${r ? "text-green-700" : "text-amber-600 font-medium"}`}>{r ? `✓ Submitted ${fmtDateTime(r.submitted_at)}` : "Needs response"}</div>
+              <div><div className="font-medium">{f.title}</div>{f.due_at && <div className="text-xs text-slate-500">Due <LocalTime iso={f.due_at} /></div>}</div>
+              <div className={`text-sm ${r ? "text-green-700" : "text-amber-600 font-medium"}`}>{r ? <>✓ Submitted <LocalTime iso={r.submitted_at} /></> : "Needs response"}</div>
             </Link></li>); })}
         </ul>
       </section>

@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireOrg } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { fmtDateTime } from "@/lib/format";
+import LocalTime from "@/components/local-time";
 import RsvpForm from "./rsvp-form";
 import type { Rsvp } from "@/lib/database.types";
 import type { Lineup } from "@db/lineup";
@@ -34,10 +34,10 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
       <section>
         <h1 className="text-2xl font-normal">{event.title} <span className="text-xs uppercase text-slate-400 font-normal">{event.kind}</span></h1>
-        <p className="text-slate-600">{fmtDateTime(event.starts_at)}{event.ends_at && ` – ${new Date(event.ends_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`}</p>
+        <p className="text-slate-600"><LocalTime iso={event.starts_at} />{event.ends_at && <> – <LocalTime iso={event.ends_at} mode="time" /></>}</p>
         {event.location_name && <p className="text-slate-600">📍 {event.location_name}</p>}
         {event.notes && <RichText text={event.notes} className="mt-3" />}
-        {event.rsvp_deadline && <p className="mt-2 text-xs text-slate-500">RSVP by {fmtDateTime(event.rsvp_deadline)}{closed && " (closed)"}</p>}
+        {event.rsvp_deadline && <p className="mt-2 text-xs text-slate-500">RSVP by <LocalTime iso={event.rsvp_deadline} />{closed && " (closed)"}</p>}
         {!!lineups?.length && (
           <div className="mt-6">
             <h2 className="font-semibold mb-2">Lineups</h2>

@@ -5,10 +5,10 @@ import RichEditor from "@/components/rich-editor";
 import RichText from "@/components/rich-text";
 import { submitForm, type SubmitState } from "./actions";
 import AttendanceFields from "@/components/attendance-fields";
-import { fmtDateTime } from "@/lib/format";
+import LocalTime from "@/components/local-time";
 import type { Event, FormQuestion, PickupLocation, Rsvp } from "@/lib/database.types";
 
-const Q = ({ title, required, help, meta, children }: { title: React.ReactNode; required?: boolean; help?: string; meta?: string; children: React.ReactNode }) => (
+const Q = ({ title, required, help, meta, children }: { title: React.ReactNode; required?: boolean; help?: string; meta?: React.ReactNode; children: React.ReactNode }) => (
   <div className="gf-card space-y-3">
     <div className="text-base font-normal">{title}{required && <span className="gf-required"> *</span>}</div>
     {meta && <p className="text-xs" style={{ color: "var(--g-grey-600)" }}>{meta}</p>}
@@ -38,7 +38,7 @@ export default function FillForm({ formId, events, rsvpBy, questions, existingAn
 
       {events.map(({ event, prompt }, i) => (
         <Q key={event.id} required title={prompt || `${i % 2 ? "🌚" : "🌝"} Will you be attending ${event.title}?`}
-          meta={`${fmtDateTime(event.starts_at)}${event.location_name ? ` · 📍 ${event.location_name}` : ""}`} help={event.notes ?? undefined}>
+          meta={<><LocalTime iso={event.starts_at} />{event.location_name ? ` · 📍 ${event.location_name}` : ""}</>} help={event.notes ?? undefined}>
           <AttendanceFields prefix={`ev_${event.id}_`} existing={rsvpBy[event.id] ?? null} pickups={pickups} defaultSeats={defaultSeats} />
         </Q>
       ))}
@@ -64,7 +64,7 @@ export default function FillForm({ formId, events, rsvpBy, questions, existingAn
       {state.saved && <div className="gf-card text-sm">✅ Your response has been recorded. You can resubmit any time before the form closes — the latest one counts.</div>}
       <div className="flex items-center justify-between pt-1">
         <button disabled={pending} className="btn-purple">{pending ? "Submitting…" : submittedAt ? "Update response" : "Submit"}</button>
-        {submittedAt && !state.saved && <span className="text-xs" style={{ color: "var(--g-grey-600)" }}>Last submitted {fmtDateTime(submittedAt)}</span>}
+        {submittedAt && !state.saved && <span className="text-xs" style={{ color: "var(--g-grey-600)" }}>Last submitted <LocalTime iso={submittedAt} /></span>}
       </div>
     </form>
   );

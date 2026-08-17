@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireOrg } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { fmtDateTime } from "@/lib/format";
+import LocalTime from "@/components/local-time";
 import type { Event, FormQuestion, Rsvp } from "@/lib/database.types";
 import FillForm from "./fill-form";
 import RichText from "@/components/rich-text";
@@ -33,7 +33,7 @@ export default async function FormFillPage({ params }: { params: Promise<{ id: s
           <h1 className="text-[32px] leading-tight font-normal">{form.title}</h1>
           {form.description && <div className="mt-3" style={{ color: "var(--g-grey-900)" }}><RichText text={form.description} /></div>}
           <div className="mt-4 pt-3 border-t text-sm flex flex-wrap gap-x-4 gap-y-1" style={{ borderColor: "var(--g-grey-300)" }}>
-            {form.due_at && <span className={overdue ? "font-medium" : ""} style={{ color: overdue ? "var(--g-red)" : "var(--g-grey-600)" }}>‼ Due {fmtDateTime(form.due_at)}{overdue && " — past due"}</span>}
+            {form.due_at && <span className={overdue ? "font-medium" : ""} style={{ color: overdue ? "var(--g-red)" : "var(--g-grey-600)" }}>‼ Due <LocalTime iso={form.due_at} />{overdue && " — past due"}</span>}
             <span style={{ color: "var(--g-grey-600)" }}>{profile.email}</span>
             <span className="gf-required">* Indicates required question</span>
           </div>
@@ -55,7 +55,7 @@ export default async function FormFillPage({ params }: { params: Promise<{ id: s
               submittedAt={response?.submitted_at ?? null} />
           : <div className="gf-card text-sm" style={{ color: "var(--g-grey-600)" }}>
               {form.status === "closed" ? "This form is no longer accepting responses." : "This form isn’t open yet."}
-              {response && <span> You responded {fmtDateTime(response.submitted_at)}.</span>}
+              {response && <span> You responded <LocalTime iso={response.submitted_at} />.</span>}
             </div>}
         <p className="text-center text-xs pt-4" style={{ color: "var(--g-grey-600)" }}>{org.name} · Team Portal</p>
       </div>

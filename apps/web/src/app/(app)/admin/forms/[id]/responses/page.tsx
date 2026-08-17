@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
+import LocalTime from "@/components/local-time";
 import { fmtDateTime } from "@/lib/format";
 import { toChoice, ATTENDANCE_OPTIONS } from "@/lib/attendance";
 import type { FormQuestion, Profile, Rsvp } from "@/lib/database.types";
@@ -62,7 +63,7 @@ export default async function FormResponsesPage({ params }: { params: Promise<{ 
       <div className="gf-header flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-normal">{responded.length} responses <span className="text-sm" style={{ color: "var(--g-grey-600)" }}>of {profiles.length} members</span></h1>
-          <p className="text-sm" style={{ color: "var(--g-grey-600)" }}>{form.title}{form.due_at && ` · due ${fmtDateTime(form.due_at)}`}</p>
+          <p className="text-sm" style={{ color: "var(--g-grey-600)" }}>{form.title}{form.due_at && <> · due <LocalTime iso={form.due_at} /></>}</p>
         </div>
         <ExportCsv filename={`${form.title}.csv`} header={header} rows={rows.map((r) => r.map(String))} />
       </div>
@@ -76,7 +77,7 @@ export default async function FormResponsesPage({ params }: { params: Promise<{ 
             return (
               <div key={e.id} className="gf-card !p-4 text-sm">
                 <div className="font-medium"><Link href={`/events/${e.id}`} className="hover:underline">{e.title}</Link></div>
-                <div className="text-xs text-slate-500">{fmtDateTime(e.starts_at)}</div>
+                <div className="text-xs text-slate-500"><LocalTime iso={e.starts_at} /></div>
                 <div className="mt-2 grid grid-cols-2 gap-x-3 text-xs">
                   <span>✅ Yes: <b>{n((r) => r.status === "yes")}</b></span><span>🤔 Maybe: {n((r) => r.status === "maybe")}</span>
                   <span>❌ No: {n((r) => r.status === "no")}</span><span>🙋 Need ride: <b>{n((r) => r.ride === "needs_ride")}</b></span>
