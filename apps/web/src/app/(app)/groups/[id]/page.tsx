@@ -61,9 +61,9 @@ export default async function GroupOverviewPage({ params }: { params: Promise<{ 
         </div>
         {isAdmin && (
           <div className="flex items-center gap-2">
-          <form action={createFormForGroup}><input type="hidden" name="group_id" value={group.id} /><button className="btn-primary">📝 Create form for this group</button></form>
+          <form action={createFormForGroup}><input type="hidden" name="group_id" value={group.id} /><button className="btn-primary">📝 Create form for this event</button></form>
           <details className="relative">
-            <summary className="btn-secondary cursor-pointer list-none">＋ Add days to this group</summary>
+            <summary className="btn-secondary cursor-pointer list-none">＋ Add days</summary>
             <div className="absolute right-0 z-10 mt-2 w-[34rem] max-w-[90vw] rounded-lg border bg-white p-4 shadow-lg" style={{ borderColor: "var(--g-grey-300)" }}>
               <EventBatchForm compact groupId={group.id} />
             </div>
@@ -148,14 +148,14 @@ export default async function GroupOverviewPage({ params }: { params: Promise<{ 
             </section>
           );
         })}
-        {!events?.length && <p className="text-sm" style={{ color: "var(--g-grey-600)" }}>No days in this group yet.</p>}
+        {!events?.length && <p className="text-sm" style={{ color: "var(--g-grey-600)" }}>No days in this event yet.</p>}
       </div>
 
       {isAdmin && (
         <form action={deleteGroup} className="flex items-center gap-3 pt-6 text-xs" style={{ color: "var(--g-grey-600)" }}>
           <input type="hidden" name="id" value={group.id} />
-          <label className="flex items-center gap-1"><input type="checkbox" name="with_events" /> also delete the {events?.length ?? 0} day event(s)</label>
-          <button className="btn-danger-text">Delete group</button>
+          <label className="flex items-center gap-1"><input type="checkbox" name="with_events" defaultChecked /> also delete its {events?.length ?? 0} day(s)</label>
+          <button className="btn-danger-text">Delete event</button>
         </form>
       )}
     </div>

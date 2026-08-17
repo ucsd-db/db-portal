@@ -36,7 +36,7 @@ export default function FormEditor({ id, initial, events, groups }: { id: string
     if (!gid) return;
     const ids = events.filter((e) => e.group_id === gid).map((e) => e.id).filter((eid) => !f.events.some((x) => x.event_id === eid));
     set("events", [...f.events, ...ids.map((event_id) => ({ event_id, prompt: null }))]);
-    setMsg(`Added ${ids.length} day(s) from group`);
+    setMsg(`Added ${ids.length} day(s)`);
   };
   const toggleEvent = (eid: string) => set("events", f.events.some((e) => e.event_id === eid) ? f.events.filter((e) => e.event_id !== eid) : [...f.events, { event_id: eid, prompt: null }]);
   const setPrompt = (eid: string, prompt: string) => set("events", f.events.map((e) => (e.event_id === eid ? { ...e, prompt: prompt || null } : e)));
@@ -86,11 +86,11 @@ export default function FormEditor({ id, initial, events, groups }: { id: string
           <div className="flex items-center gap-1">
             {groups.length > 0 && (
               <select value="" onChange={(e) => addGroup(e.target.value)} className="input w-auto py-1 text-xs">
-                <option value="">Add all days from a group…</option>
+                <option value="">Add all days of an event…</option>
                 {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
               </select>
             )}
-            <button type="button" onClick={() => setAddingDays((v) => !v)} className="btn-text">{addingDays ? "Cancel" : "＋ Add practice days"}</button>
+            <button type="button" onClick={() => setAddingDays((v) => !v)} className="btn-text">{addingDays ? "Cancel" : "＋ New event & days"}</button>
           </div>
         </div>
         <p className="text-xs" style={{ color: "var(--g-grey-600)" }}>Each checked day gets its own “Will you be attending?” question (drive others / own ride / need a ride + pickup spot), so people can answer per day. Answers feed attendance, lineups and carpool.</p>
@@ -99,7 +99,7 @@ export default function FormEditor({ id, initial, events, groups }: { id: string
             <EventBatchForm compact onCreated={(ids) => { set("events", [...f.events, ...ids.map((id) => ({ event_id: id, prompt: null }))]); setAddingDays(false); setMsg(`Added ${ids.length} day(s) — remember to Save`); }} />
           </div>
         )}
-        {!events.length && !addingDays && <p className="text-sm" style={{ color: "var(--g-red)" }}>No upcoming events yet — click “Add practice days”.</p>}
+        {!events.length && !addingDays && <p className="text-sm" style={{ color: "var(--g-red)" }}>No upcoming events yet — click “New event & days”.</p>}
         {events.map((ev) => {
           const on = f.events.find((e) => e.event_id === ev.id);
           return (
