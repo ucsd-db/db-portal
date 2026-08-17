@@ -17,6 +17,25 @@ export async function createForm() {
   redirect(`/admin/forms/${data.id}`);
 }
 
+/** Create a draft form pre-linked to every day in an event group, then open the editor. */
+export async function createFormForGroup(fd: FormData) {
+  const { org, userId } = await requireAdmin();
+  const groupId = String(fd.get("group_id"));
+  const supabase = await createClient();
+  const [{ data: group }, { data: events }] = await Promise.all([
+    supabase.from("event_groups").select("id, name").eq("id", groupId).eq("org_id", org.id).maybeSingle(),
+    supabase.from("events").select("id").eq("group_id", groupId).eq("org_id", org.id).order("starts_at"),
+  ]);
+  if (!group) throw new Error("Group not found");
+  const { data: form, error } = await supabase.from("forms")
+    .insert({ org_id: org.id, created_by: userId, title: `${group.name} Form` })
+    .select("id").single();
+  if (error) throw new Error(error.message);
+  if (events?.length) await supabase.from("form_events").insert(events.map((e, i) => ({ form_id: form.id, event_id: e.id, sort_order: i })));
+  revalidatePath("/admin/forms"); revalidatePath(`/groups/${groupId}`);
+  redirect(`/admin/forms/${form.id}`);
+}
+
 export type FormPayload = {
   title: string; description: string; due_at: string | null; status: "draft" | "open" | "closed";
   questions: FormQuestion[];

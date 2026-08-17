@@ -7,6 +7,7 @@ import LineupView from "@/components/lineup-view";
 import RichText from "@/components/rich-text";
 import EventBatchForm from "@/components/event-batch-form";
 import { deleteGroup, renameGroup } from "@/app/(app)/admin/actions";
+import { createFormForGroup } from "@/app/(app)/admin/forms/actions";
 import type { Lineup } from "@db/lineup";
 import type { Car } from "@db/carpool";
 import type { Rsvp } from "@/lib/database.types";
@@ -24,13 +25,23 @@ export default async function GroupOverviewPage({ params }: { params: Promise<{ 
   ]);
   if (!group) notFound();
   const eventIds = (events ?? []).map((e) => e.id);
-  const [{ data: rsvps }, { data: lineups }, { data: carpools }] = eventIds.length
+  const [{ data: rsvps }, { data: lineups }, { data: carpools }, { data: formLinks }] = eventIds.length
     ? await Promise.all([
         supabase.from("rsvps").select("*").in("event_id", eventIds),
         supabase.from("lineups").select("*").in("event_id", eventIds).order("name"),
         supabase.from("carpools").select("*").in("event_id", eventIds),
+        supabase.from("form_events").select("event_id, form:forms(id, title, status, due_at)").in("event_id", eventIds),
       ])
-    : [{ data: [] as Rsvp[] }, { data: [] }, { data: [] }];
+    : [{ data: [] as Rsvp[] }, { data: [] }, { data: [] }, { data: [] }];
+  // Forms covering any day of this group (members only see non-draft ones — RLS handles that).
+  const formsById = new Map<string, { id: string; title: string; status: string; due_at: string | null; days: number }>();
+  for (const l of formLinks ?? []) {
+    const f = l.form as unknown as { id: string; title: string; status: string; due_at: string | null } | null;
+    if (!f) continue;
+    const cur = formsById.get(f.id) ?? { ...f, days: 0 };
+    cur.days += 1; formsById.set(f.id, cur);
+  }
+  const forms = [...formsById.values()];
   const names: Record<string, string> = {};
   for (const t of teammates ?? []) names[t.id] = t.full_name || t.email;
   const pickupName = new Map((pickups ?? []).map((p) => [p.id, p.name]));
@@ -49,14 +60,30 @@ export default async function GroupOverviewPage({ params }: { params: Promise<{ 
           ) : <h1 className="text-2xl font-normal">{group.name}</h1>}
         </div>
         {isAdmin && (
+          <div className="flex items-center gap-2">
+          <form action={createFormForGroup}><input type="hidden" name="group_id" value={group.id} /><button className="btn-primary">📝 Create form for this group</button></form>
           <details className="relative">
             <summary className="btn-secondary cursor-pointer list-none">＋ Add days to this group</summary>
             <div className="absolute right-0 z-10 mt-2 w-[34rem] max-w-[90vw] rounded-lg border bg-white p-4 shadow-lg" style={{ borderColor: "var(--g-grey-300)" }}>
               <EventBatchForm compact groupId={group.id} />
             </div>
           </details>
+          </div>
         )}
       </div>
+
+      {(forms.length > 0 || isAdmin) && (
+        <div className="card !py-3 flex flex-wrap items-center gap-2 text-sm">
+          <span className="font-medium">📝 Forms:</span>
+          {forms.map((f) => (
+            <Link key={f.id} href={isAdmin ? `/admin/forms/${f.id}` : `/forms/${f.id}`} className="chip chip-active">
+              {f.title} · {f.status}{f.days < (events?.length ?? 0) ? ` · ${f.days}/${events?.length} days` : ""}
+            </Link>
+          ))}
+          {!forms.length && <span style={{ color: "var(--g-grey-600)" }}>none yet</span>}
+          {isAdmin && forms.map((f) => <Link key={`r-${f.id}`} href={`/admin/forms/${f.id}/responses`} className="btn-text py-0.5">responses</Link>)}
+        </div>
+      )}
 
       <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(auto-fit, minmax(${(events?.length ?? 1) > 1 ? 340 : 480}px, 1fr))` }}>
         {events?.map((ev) => {
