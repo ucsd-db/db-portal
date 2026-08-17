@@ -12,3 +12,14 @@ export function cleanHtml(html: string): string {
 
 /** True when the stored value is editor HTML (vs. legacy plain text). */
 export const isHtml = (s: string) => /^\s*</.test(s);
+
+/** Flatten editor HTML to readable plain text (for CSV / sheet cells). */
+export function htmlToText(html: string): string {
+  if (!isHtml(html)) return html;
+  return sanitizeHtml(html
+    .replace(/<\/(p|div|h[1-6]|li|blockquote)>/gi, "\n")
+    .replace(/<br\s*\/?>/gi, "\n")
+    .replace(/<li[^>]*>/gi, "• "), { allowedTags: [], allowedAttributes: {} })
+    .replace(/&nbsp;/g, " ").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/\n{3,}/g, "\n\n").trim();
+}

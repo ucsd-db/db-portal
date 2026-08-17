@@ -1,18 +1,26 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
+import RichEditor from "@/components/rich-editor";
+import RichText from "@/components/rich-text";
 import { submitForm, type SubmitState } from "./actions";
 import AttendanceFields from "@/components/attendance-fields";
 import { fmtDateTime } from "@/lib/format";
 import type { Event, FormQuestion, PickupLocation, Rsvp } from "@/lib/database.types";
 
-const Q = ({ title, required, help, children }: { title: React.ReactNode; required?: boolean; help?: string; children: React.ReactNode }) => (
+const Q = ({ title, required, help, meta, children }: { title: React.ReactNode; required?: boolean; help?: string; meta?: string; children: React.ReactNode }) => (
   <div className="gf-card space-y-3">
     <div className="text-base font-normal">{title}{required && <span className="gf-required"> *</span>}</div>
-    {help && <p className="text-xs whitespace-pre-wrap" style={{ color: "var(--g-grey-600)" }}>{help}</p>}
+    {meta && <p className="text-xs" style={{ color: "var(--g-grey-600)" }}>{meta}</p>}
+    {help && <RichText text={help} className="!text-xs" />}
     {children}
   </div>
 );
+
+function ParagraphAnswer({ name, initial }: { name: string; initial: string }) {
+  const [v, setV] = useState(initial);
+  return (<><input type="hidden" name={name} value={v} /><RichEditor value={v} onChange={setV} minRows={3} placeholder="Your answer" /></>);
+}
 
 export default function FillForm({ formId, events, rsvpBy, questions, existingAnswers, pickups, defaultSeats, weightKg, submittedAt }: {
   formId: string; events: { prompt: string | null; event: Event }[]; rsvpBy: Record<string, Rsvp>; questions: FormQuestion[];
@@ -30,7 +38,7 @@ export default function FillForm({ formId, events, rsvpBy, questions, existingAn
 
       {events.map(({ event, prompt }, i) => (
         <Q key={event.id} required title={prompt || `${i % 2 ? "🌚" : "🌝"} Will you be attending ${event.title}?`}
-          help={`${fmtDateTime(event.starts_at)}${event.location_name ? ` · 📍 ${event.location_name}` : ""}${event.notes ? `\n${event.notes}` : ""}`}>
+          meta={`${fmtDateTime(event.starts_at)}${event.location_name ? ` · 📍 ${event.location_name}` : ""}`} help={event.notes ?? undefined}>
           <AttendanceFields prefix={`ev_${event.id}_`} existing={rsvpBy[event.id] ?? null} pickups={pickups} defaultSeats={defaultSeats} />
         </Q>
       ))}
@@ -38,7 +46,7 @@ export default function FillForm({ formId, events, rsvpBy, questions, existingAn
       {questions.map((q) => (
         <Q key={q.id} title={q.label} required={q.required} help={q.help}>
           {q.type === "short_text" && <input name={`q_${q.id}`} defaultValue={(a(q.id) as string) ?? ""} required={q.required} placeholder="Your answer" className="input-line w-1/2" />}
-          {q.type === "long_text" && <textarea name={`q_${q.id}`} defaultValue={(a(q.id) as string) ?? ""} required={q.required} rows={2} placeholder="Your answer" className="input-line" />}
+          {q.type === "long_text" && <ParagraphAnswer name={`q_${q.id}`} initial={(a(q.id) as string) ?? ""} />}
           {q.type === "number" && <input name={`q_${q.id}`} type="number" step="any" defaultValue={(a(q.id) as number) ?? ""} required={q.required} placeholder="Your answer" className="input-line w-1/3" />}
           {q.type === "yes_no" && (["yes", "no"] as const).map((v) => (
             <label key={v} className="gf-radio capitalize"><input type="radio" name={`q_${q.id}`} value={v} required={q.required} defaultChecked={a(q.id) === (v === "yes")} /> {v}</label>

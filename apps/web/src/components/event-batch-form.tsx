@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createEventsBatch } from "@/app/(app)/admin/actions";
 import { combineLocal, formatTime, parseTimeText, shortDate, weekdayName } from "@/lib/time";
+import RichEditor from "@/components/rich-editor";
 
 type Kind = "practice" | "race" | "social" | "other";
 const KIND_LABEL: Record<Kind, string> = { practice: "Practice", race: "Race", social: "Social", other: "Event" };
@@ -98,7 +99,7 @@ export default function EventBatchForm({ onCreated, compact = false }: { onCreat
             <div><label className="label">RSVP deadline date</label><input type="date" value={deadline.date} onChange={(e) => setDeadline({ ...deadline, date: e.target.value })} className="input" /></div>
             <div><label className="label">Deadline time</label><input value={deadline.time} onChange={(e) => setDeadline({ ...deadline, time: e.target.value })} className="input" /></div>
           </div>
-          <div><label className="label">Notes for paddlers</label><textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} placeholder="Meet 8:00 at Peterson Loop if you need a ride from campus" className="input" /></div>
+          <div><label className="label">Notes for paddlers</label><RichEditor value={notes} onChange={setNotes} minRows={3} placeholder="Meet 8:00 at Peterson Loop if you need a ride from campus" /></div>
         </div>
       </details>
 

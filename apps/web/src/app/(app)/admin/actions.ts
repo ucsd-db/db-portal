@@ -94,7 +94,7 @@ export async function createEventsBatch(input: {
   const supabase = await createClient();
   const { data, error } = await supabase.from("events").insert(input.items.map((it) => ({
     org_id: org.id, created_by: userId, kind: input.kind, title: it.title, starts_at: it.starts_at, ends_at: it.ends_at, rsvp_deadline: it.rsvp_deadline,
-    location_name: input.location_name, location_lat: input.location_lat, location_lon: input.location_lon, notes: input.notes,
+    location_name: input.location_name, location_lat: input.location_lat, location_lon: input.location_lon, notes: input.notes ? cleanHtml(input.notes) : null,
   }))).select("id, starts_at");
   if (error) return { error: error.message };
   revalidatePath("/events"); revalidatePath("/dashboard"); revalidatePath("/admin/events");
