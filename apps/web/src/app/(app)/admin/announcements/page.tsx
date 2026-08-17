@@ -1,6 +1,6 @@
 import { requireAdmin } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { fmtDateTime } from "@/lib/format";
+import LocalTime from "@/components/local-time";
 import { deleteAnnouncement, togglePin } from "../actions";
 import AnnouncementForm from "./form";
 
@@ -29,7 +29,7 @@ export default async function AdminAnnouncementsPage() {
                     <button className="text-xs text-red-600 underline">Delete</button></form>
                 </div>
               </div>
-              <div className="text-xs text-slate-400">{fmtDateTime(a.created_at)}</div>
+              <div className="text-xs text-slate-400"><LocalTime iso={a.created_at} /></div>
             </li>
           ))}
         </ul>

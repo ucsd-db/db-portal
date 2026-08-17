@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { fmtDateTime } from "@/lib/format";
+import LocalTime from "@/components/local-time";
 import { createForm, duplicateForm } from "./actions";
 
 const status: Record<string, [string, string, string]> = { draft: ["Draft", "var(--g-grey-100)", "var(--g-grey-600)"], open: ["Accepting responses", "var(--g-green-soft)", "var(--g-green)"], closed: ["Closed", "#fef7e0", "#b06000"] };
@@ -41,7 +41,7 @@ export default async function AdminFormsPage() {
                 </Link>
                 <div className="p-3 text-sm flex-1">
                   <Link href={`/admin/forms/${f.id}`} className="font-medium hover:underline line-clamp-2">{f.title}</Link>
-                  <div className="mt-1 text-xs" style={{ color: "var(--g-grey-600)" }}>{(f.form_events as unknown[]).length} event(s){f.due_at && ` · due ${fmtDateTime(f.due_at)}`}</div>
+                  <div className="mt-1 text-xs" style={{ color: "var(--g-grey-600)" }}>{(f.form_events as unknown[]).length} event(s){f.due_at && <> · due <LocalTime iso={f.due_at} /></>}</div>
                   <div className="mt-2 flex items-center justify-between">
                     <span className="chip" style={{ background: st[1], color: st[2], borderColor: "transparent" }}>{st[0]}</span>
                     <span className="text-xs" style={{ color: "var(--g-grey-600)" }}>{responses}/{memberCount ?? "?"}</span>

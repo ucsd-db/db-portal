@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { fmtDateTime } from "@/lib/format";
+import LocalTime from "@/components/local-time";
 import { deleteEvent } from "../actions";
 import EventBatchForm from "@/components/event-batch-form";
 
@@ -28,7 +28,7 @@ export default async function AdminEventsPage() {
                 <div className="flex justify-between gap-2">
                   <div>
                     <Link href={`/events/${p.id}`} className="font-medium hover:underline">{p.title}</Link> <span className="text-[10px] uppercase text-slate-400">{p.kind}</span>
-                    <div className="text-xs text-slate-500">{fmtDateTime(p.starts_at)}</div>
+                    <div className="text-xs text-slate-500"><LocalTime iso={p.starts_at} /></div>
                     <div className="text-xs text-slate-500">✅ {c("yes")} · 🤔 {c("maybe")} · ❌ {c("no")}</div>
                   </div>
                   <div className="flex flex-col items-end gap-1 shrink-0">

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireOrg } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { fmtDateTime } from "@/lib/format";
+import LocalTime from "@/components/local-time";
 import RichText from "@/components/rich-text";
 
 export default async function DashboardPage() {
@@ -27,7 +27,7 @@ export default async function DashboardPage() {
           <div className="mb-4 rounded-lg border p-4 text-sm" style={{ borderColor: "#fde293", background: "#fef7e0" }}>
             <div className="font-semibold text-amber-800">📝 You have {pendingForms.length} form{pendingForms.length > 1 ? "s" : ""} to fill out</div>
             <ul className="mt-1 space-y-0.5">
-              {pendingForms.map((f) => <li key={f.id}><Link href={`/forms/${f.id}`} className="underline">{f.title}</Link>{f.due_at && <span className="text-amber-700"> · due {fmtDateTime(f.due_at)}</span>}</li>)}
+              {pendingForms.map((f) => <li key={f.id}><Link href={`/forms/${f.id}`} className="underline">{f.title}</Link>{f.due_at && <span className="text-amber-700"> · due <LocalTime iso={f.due_at} /></span>}</li>)}
             </ul>
           </div>
         )}
@@ -37,7 +37,7 @@ export default async function DashboardPage() {
             <article key={a.id} className="card">
               <div className="flex items-baseline justify-between gap-2">
                 <h2 className="font-semibold">{a.pinned && "📌 "}{a.title}</h2>
-                <span className="text-xs text-slate-400 whitespace-nowrap">{fmtDateTime(a.created_at)}</span>
+                <span className="text-xs text-slate-400 whitespace-nowrap"><LocalTime iso={a.created_at} /></span>
               </div>
               <RichText text={a.body} className="mt-1 text-slate-700" />
               <p className="mt-2 text-xs text-slate-400">— {(a.author as { full_name: string } | null)?.full_name ?? "Admin"}</p>
@@ -53,7 +53,7 @@ export default async function DashboardPage() {
             <li key={p.id}>
               <Link href={`/events/${p.id}`} className="card block hover:border-sky-400">
                 <div className="font-medium text-sm">{p.title}</div>
-                <div className="text-xs text-slate-500">{fmtDateTime(p.starts_at)}{p.location_name && ` · ${p.location_name}`}</div>
+                <div className="text-xs text-slate-500"><LocalTime iso={p.starts_at} />{p.location_name && ` · ${p.location_name}`}</div>
               </Link>
             </li>
           ))}
