@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireOrg } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { fmtDateTime } from "@/lib/format";
+import RichText from "@/components/rich-text";
 
 export default async function DashboardPage() {
   const { org, isAdmin, userId } = await requireOrg();
@@ -38,7 +39,7 @@ export default async function DashboardPage() {
                 <h2 className="font-semibold">{a.pinned && "📌 "}{a.title}</h2>
                 <span className="text-xs text-slate-400 whitespace-nowrap">{fmtDateTime(a.created_at)}</span>
               </div>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700">{a.body}</p>
+              <RichText text={a.body} className="mt-1 text-slate-700" />
               <p className="mt-2 text-xs text-slate-400">— {(a.author as { full_name: string } | null)?.full_name ?? "Admin"}</p>
             </article>
           ))}

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import type { FormQuestion, Json } from "@/lib/database.types";
+import { cleanHtml } from "@/lib/html";
 
 export async function createForm() {
   const { org, userId } = await requireAdmin();
@@ -26,7 +27,7 @@ export async function saveForm(id: string, p: FormPayload) {
   const { org } = await requireAdmin();
   const supabase = await createClient();
   const { error } = await supabase.from("forms")
-    .update({ title: p.title.trim() || "Untitled form", description: p.description, due_at: p.due_at, status: p.status, questions: p.questions as unknown as Json })
+    .update({ title: p.title.trim() || "Untitled form", description: cleanHtml(p.description), due_at: p.due_at, status: p.status, questions: p.questions as unknown as Json })
     .eq("id", id).eq("org_id", org.id);
   if (error) return { error: error.message };
   // Replace event links.

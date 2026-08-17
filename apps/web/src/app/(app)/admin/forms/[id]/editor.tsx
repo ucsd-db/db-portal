@@ -7,6 +7,7 @@ import type { FormQuestion, QuestionType } from "@/lib/database.types";
 import { fmtDateTime } from "@/lib/format";
 import { deleteForm, saveForm, type FormPayload } from "../actions";
 import EventBatchForm from "@/components/event-batch-form";
+import RichEditor from "@/components/rich-editor";
 
 type EventOpt = { id: string; title: string; kind: string; starts_at: string };
 const TYPES: { value: QuestionType; label: string; icon: string }[] = [
@@ -62,7 +63,7 @@ export default function FormEditor({ id, initial, events }: { id: string; initia
       {/* header card */}
       <div className="gf-header space-y-2">
         <input value={f.title} onChange={(e) => set("title", e.target.value)} placeholder="Untitled form" className="input-line text-[32px] leading-tight" />
-        <textarea value={f.description} onChange={(e) => set("description", e.target.value)} rows={Math.max(3, Math.min(14, f.description.split("\n").length + 1))} placeholder="Form description — meetup times, reminders, who to DM… (URLs become links)" className="input-line text-sm" />
+        <RichEditor value={f.description} onChange={(html) => set("description", html)} minRows={8} placeholder={"Form description — meetup times, reminders, who to DM…\nBold, underline, bullets and links work; paste straight from Google Docs."} />
         <div className="grid grid-cols-2 gap-4 pt-2 text-sm">
           <div><label className="label">Due</label><input type="datetime-local" value={toLocal(f.due_at)} onChange={(e) => set("due_at", e.target.value ? new Date(e.target.value).toISOString() : null)} className="input" /></div>
           <div><label className="label">Status</label>

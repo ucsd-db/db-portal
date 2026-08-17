@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { requireAdmin } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
+import { cleanHtml } from "@/lib/html";
 
 export type AdminState = { error?: string; ok?: boolean };
 const str = (v: FormDataEntryValue | null) => (v === null || String(v).trim() === "" ? null : String(v).trim());
@@ -12,7 +13,7 @@ export async function createAnnouncement(_: AdminState, fd: FormData): Promise<A
   const supabase = await createClient();
   const { error } = await supabase.from("announcements").insert({
     org_id: org.id, author_id: userId,
-    title: String(fd.get("title")).trim(), body: String(fd.get("body") ?? "").trim(),
+    title: String(fd.get("title")).trim(), body: cleanHtml(String(fd.get("body") ?? "")),
     pinned: fd.get("pinned") === "on",
   });
   if (error) return { error: error.message };
