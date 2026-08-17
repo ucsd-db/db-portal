@@ -13,7 +13,7 @@ const KIND_LABEL: Record<Kind, string> = { practice: "Practice", race: "Race", s
  * "Add days" widget: pick dates, type start/end times, one event is created per date.
  * Used standalone on Admin → Events and inline in the form editor (onCreated links them to the form).
  */
-export default function EventBatchForm({ onCreated, compact = false }: { onCreated?: (ids: string[]) => void; compact?: boolean }) {
+export default function EventBatchForm({ onCreated, compact = false, groupId = null }: { onCreated?: (ids: string[], groupId: string | null) => void; compact?: boolean; groupId?: string | null }) {
   const router = useRouter();
   const [kind, setKind] = useState<Kind>("practice");
   const [title, setTitle] = useState("");
@@ -25,6 +25,7 @@ export default function EventBatchForm({ onCreated, compact = false }: { onCreat
   const [loc, setLoc] = useState({ name: "", lat: "", lon: "" });
   const [notes, setNotes] = useState("");
   const [nameByWeekday, setNameByWeekday] = useState(true);
+  const [groupName, setGroupName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, run] = useTransition();
 
@@ -34,6 +35,12 @@ export default function EventBatchForm({ onCreated, compact = false }: { onCreat
     const out = [...dates]; const t = new Date();
     for (let i = 1; i <= 7; i++) { const d = new Date(t); d.setDate(t.getDate() + i); if (d.getDay() === 6 || d.getDay() === 0) { const s = d.toLocaleDateString("sv"); if (!out.includes(s)) out.push(s); } }
     setDates(out.sort());
+  };
+  const defaultGroupName = () => {
+    if (!dates.length) return "";
+    const base = title.trim() || KIND_LABEL[kind];
+    const a = shortDate(dates[0]), b = shortDate(dates[dates.length - 1]);
+    return dates.length > 1 ? `${base} · ${a} – ${b}` : base;
   };
   const titleFor = (d: string) => (nameByWeekday ? `${weekdayName(d)} ${title.trim() || KIND_LABEL[kind]}` : title.trim() || `${KIND_LABEL[kind]} ${shortDate(d)}`);
 
@@ -45,9 +52,10 @@ export default function EventBatchForm({ onCreated, compact = false }: { onCreat
     const dl = deadline.date ? combineLocal(deadline.date, deadline.time || "11:59pm") : null;
     const items = dates.map((d) => ({ title: titleFor(d), starts_at: combineLocal(d, start)!, ends_at: end ? combineLocal(d, end) : null, rsvp_deadline: dl }));
     run(async () => {
-      const r = await createEventsBatch({ kind, items, location_name: loc.name.trim() || null, location_lat: loc.lat ? Number(loc.lat) : null, location_lon: loc.lon ? Number(loc.lon) : null, notes: notes.trim() || null });
+      const r = await createEventsBatch({ kind, items, location_name: loc.name.trim() || null, location_lat: loc.lat ? Number(loc.lat) : null, location_lon: loc.lon ? Number(loc.lon) : null, notes: notes.trim() || null,
+        groupId, groupName: groupId ? null : (groupName.trim() || defaultGroupName()) });
       if (r.error) { setError(r.error); return; }
-      onCreated?.(r.ids ?? []);
+      onCreated?.(r.ids ?? [], r.groupId ?? null);
       setDates([]); setNotes("");
       router.refresh();
     });
@@ -78,6 +86,10 @@ export default function EventBatchForm({ onCreated, compact = false }: { onCreat
         </div>
       </div>
 
+      {!groupId && dates.length > 1 && (
+        <div><label className="label">Group name — the wrapper for all these days (one overview screen for lineups & rides)</label>
+          <input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder={defaultGroupName()} className="input" /></div>
+      )}
       <div className="grid grid-cols-2 gap-3">
         <div><label className="label">Start time</label>
           <input value={start} onChange={(e) => setStart(e.target.value)} placeholder="8:45am" className="input" />

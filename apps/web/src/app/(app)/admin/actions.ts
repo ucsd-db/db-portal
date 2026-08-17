@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { requireAdmin } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import { cleanHtml } from "@/lib/html";
@@ -88,16 +89,45 @@ export async function createEventsBatch(input: {
   kind: "practice" | "race" | "social" | "other";
   items: { title: string; starts_at: string; ends_at: string | null; rsvp_deadline: string | null }[];
   location_name: string | null; location_lat: number | null; location_lon: number | null; notes: string | null;
-}): Promise<{ ids?: string[]; error?: string }> {
+  /** When set (and 2+ items), an event group wrapping all the days is created with this name. */
+  groupName?: string | null;
+  /** Or attach the new days to an existing group. */
+  groupId?: string | null;
+}): Promise<{ ids?: string[]; groupId?: string | null; error?: string }> {
   const { org, userId } = await requireAdmin();
   if (!input.items.length) return { error: "Add at least one date" };
   const supabase = await createClient();
+  let groupId: string | null = input.groupId ?? null;
+  if (!groupId && input.groupName && input.items.length > 1) {
+    const { data: g, error: ge } = await supabase.from("event_groups").insert({ org_id: org.id, name: input.groupName.trim(), kind: input.kind, created_by: userId }).select("id").single();
+    if (ge) return { error: ge.message };
+    groupId = g.id;
+  }
   const { data, error } = await supabase.from("events").insert(input.items.map((it) => ({
-    org_id: org.id, created_by: userId, kind: input.kind, title: it.title, starts_at: it.starts_at, ends_at: it.ends_at, rsvp_deadline: it.rsvp_deadline,
+    org_id: org.id, created_by: userId, kind: input.kind, group_id: groupId, title: it.title, starts_at: it.starts_at, ends_at: it.ends_at, rsvp_deadline: it.rsvp_deadline,
     location_name: input.location_name, location_lat: input.location_lat, location_lon: input.location_lon, notes: input.notes ? cleanHtml(input.notes) : null,
   }))).select("id, starts_at");
   if (error) return { error: error.message };
   revalidatePath("/events"); revalidatePath("/dashboard"); revalidatePath("/admin/events");
   const order = new Map(input.items.map((it, i) => [it.starts_at, i]));
-  return { ids: (data ?? []).sort((a, b) => (order.get(new Date(a.starts_at).toISOString()) ?? 0) - (order.get(new Date(b.starts_at).toISOString()) ?? 0)).map((d) => d.id) };
+  revalidatePath("/groups", "layout");
+  return { groupId, ids: (data ?? []).sort((a, b) => (order.get(new Date(a.starts_at).toISOString()) ?? 0) - (order.get(new Date(b.starts_at).toISOString()) ?? 0)).map((d) => d.id) };
+}
+
+export async function renameGroup(fd: FormData) {
+  const { org } = await requireAdmin();
+  const supabase = await createClient();
+  const name = String(fd.get("name") ?? "").trim();
+  if (name) await supabase.from("event_groups").update({ name }).eq("id", String(fd.get("id"))).eq("org_id", org.id);
+  revalidatePath(`/groups/${String(fd.get("id"))}`); revalidatePath("/admin/events"); revalidatePath("/events");
+}
+
+export async function deleteGroup(fd: FormData) {
+  const { org } = await requireAdmin();
+  const supabase = await createClient();
+  const id = String(fd.get("id"));
+  if (fd.get("with_events") === "on") await supabase.from("events").delete().eq("group_id", id).eq("org_id", org.id);
+  await supabase.from("event_groups").delete().eq("id", id).eq("org_id", org.id);
+  revalidatePath("/admin/events"); revalidatePath("/events"); revalidatePath("/dashboard");
+  redirect("/admin/events");
 }
