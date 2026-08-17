@@ -3,10 +3,11 @@ import sanitizeHtml from "sanitize-html";
 /** Server-safe sanitizer for editor HTML (forms, announcements). */
 export function cleanHtml(html: string): string {
   return sanitizeHtml(html, {
-    allowedTags: ["p", "br", "b", "strong", "i", "em", "u", "s", "a", "ul", "ol", "li", "h2", "h3", "blockquote", "hr", "code", "pre"],
-    allowedAttributes: { a: ["href", "target", "rel"] },
+    allowedTags: ["p", "br", "b", "strong", "i", "em", "u", "s", "a", "ul", "ol", "li", "h2", "h3", "blockquote", "hr", "code", "pre", "img"],
+    allowedAttributes: { a: ["href", "target", "rel"], img: ["src", "alt", "title", "loading", "referrerpolicy"] },
+    allowedSchemesByTag: { img: ["https"] },
     allowedSchemes: ["http", "https", "mailto", "tel"],
-    transformTags: { a: sanitizeHtml.simpleTransform("a", { target: "_blank", rel: "noopener noreferrer" }) },
+    transformTags: { a: sanitizeHtml.simpleTransform("a", { target: "_blank", rel: "noopener noreferrer" }), img: sanitizeHtml.simpleTransform("img", { loading: "lazy", referrerpolicy: "no-referrer" }) },
   });
 }
 

@@ -74,3 +74,5 @@ body { background: var(--g-grey-50); color: var(--g-grey-900); }
 .rich s { text-decoration: line-through; }
 .rich code { background: var(--g-grey-100); padding: 0 .25rem; border-radius: 3px; font-size: .85em; }
 .rich .ProseMirror-selectednode { outline: 2px solid var(--g-blue-soft); }
+.rich img { max-width: 100%; height: auto; border-radius: 6px; margin: .5rem 0; display: block; }
+.rich img.ProseMirror-selectednode { outline: 3px solid var(--g-blue-soft); }
