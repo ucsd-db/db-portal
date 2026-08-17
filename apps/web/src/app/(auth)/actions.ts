@@ -19,16 +19,22 @@ export async function signIn(_: AuthState, formData: FormData): Promise<AuthStat
 export async function signUp(_: AuthState, formData: FormData): Promise<AuthState> {
   const supabase = await createClient();
   const origin = (await headers()).get("origin") ?? "";
-  const { error } = await supabase.auth.signUp({
-    email: String(formData.get("email")),
-    password: String(formData.get("password")),
-    options: {
-      data: { full_name: String(formData.get("full_name")) },
-      emailRedirectTo: `${origin}/auth/callback`,
-    },
+  const email = String(formData.get("email"));
+  const password = String(formData.get("password"));
+  const { data, error } = await supabase.auth.signUp({
+    email, password,
+    options: { data: { full_name: String(formData.get("full_name")) }, emailRedirectTo: `${origin}/auth/callback` },
   });
-  if (error) return { error: error.message };
-  return { message: "Check your email to confirm your account, then sign in." };
+  if (data.session) redirect("/dashboard");
+
+  // Accounts are auto-confirmed by a DB trigger (see 0002_autoconfirm_email.sql), so even when
+  // Supabase thinks a confirmation email is pending (or failed to send), a password sign-in works.
+  const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+  if (!signInError) redirect("/dashboard");
+
+  if (error && !/confirmation|sending/i.test(error.message)) return { error: error.message };
+  if (signInError.message.toLowerCase().includes("invalid")) return { error: "An account with this email already exists — sign in instead." };
+  return { message: "Account created. Check your email to confirm, then sign in." };
 }
 
 export async function signOut() {
