@@ -29,7 +29,8 @@ supabase/migrations/ SQL schema + RLS policies + RPCs
 - `profiles` — 1:1 with auth users; weight/gender/side pref/steer/drum + address (geocoded lat/lon), can_drive, car_seats
 - `organizations` (team) with a `join_code`; `memberships (org_id, user_id, role: admin|member)`
 - `announcements` (admin → board)
-- `events` (`kind`: practice | race | social | other, time, location lat/lon)
+- `event_groups` — wrapper for several day-events (e.g. "Spring Week 8 Practice" = Sat + Sun); `/groups/[id]` shows every day's attendance, lineups and rides on one screen
+- `events` (`kind`: practice | race | social | other, `group_id`, time, location lat/lon)
 - `pickup_locations` — named meetup spots (e.g. each campus college) paddlers can choose when they need a ride
 - `forms` — the weekly practice form / race logistics form: description, due date, `status` draft|open|closed,
   `questions` jsonb (short/long text, single/multi choice, yes/no, number); `form_events` links a form to

@@ -62,10 +62,20 @@ export type PickupLocation = {
   active: boolean;
 };
 
+export type EventGroup = {
+  id: string;
+  org_id: string;
+  name: string;
+  kind: EventKind;
+  created_by: string | null;
+  created_at: string;
+};
+
 export type Event = {
   id: string;
   org_id: string;
   kind: EventKind;
+  group_id: string | null;
   title: string;
   starts_at: string;
   ends_at: string | null;
@@ -192,13 +202,22 @@ export type Database = {
           { foreignKeyName: "pickup_locations_org_id_fkey"; columns: ["org_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },
         ];
       };
+      event_groups: {
+        Row: Row<EventGroup>;
+        Insert: Insert<EventGroup, "id" | "kind" | "created_by" | "created_at">;
+        Update: Partial<EventGroup>;
+        Relationships: [
+          { foreignKeyName: "event_groups_org_id_fkey"; columns: ["org_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },
+        ];
+      };
       events: {
         Row: Row<Event>;
-        Insert: Insert<Event, "id" | "kind" | "ends_at" | "location_name" | "location_lat" | "location_lon" | "notes" | "rsvp_deadline" | "created_by" | "created_at">;
+        Insert: Insert<Event, "id" | "kind" | "group_id" | "ends_at" | "location_name" | "location_lat" | "location_lon" | "notes" | "rsvp_deadline" | "created_by" | "created_at">;
         Update: Partial<Event>;
         Relationships: [
           { foreignKeyName: "events_org_id_fkey"; columns: ["org_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },
           { foreignKeyName: "events_created_by_fkey"; columns: ["created_by"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+          { foreignKeyName: "events_group_id_fkey"; columns: ["group_id"]; isOneToOne: false; referencedRelation: "event_groups"; referencedColumns: ["id"] },
         ];
       };
       forms: {

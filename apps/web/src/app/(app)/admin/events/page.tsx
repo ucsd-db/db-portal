@@ -8,8 +8,16 @@ import EventBatchForm from "@/components/event-batch-form";
 export default async function AdminEventsPage() {
   const { org } = await requireAdmin();
   const supabase = await createClient();
-  const { data: items } = await supabase.from("events").select("*, rsvps(status)").eq("org_id", org.id)
-    .order("starts_at", { ascending: false }).limit(50);
+  const { data: items } = await supabase.from("events").select("*, rsvps(status), group:event_groups(id, name)").eq("org_id", org.id)
+    .order("starts_at", { ascending: false }).limit(60);
+  type Ev = NonNullable<typeof items>[number];
+  const sections: { group: { id: string; name: string } | null; items: Ev[] }[] = [];
+  for (const ev of items ?? []) {
+    const g = ev.group as { id: string; name: string } | null;
+    const last = sections[sections.length - 1];
+    if (last && last.group?.id && last.group.id === g?.id) last.items.push(ev);
+    else sections.push({ group: g, items: [ev] });
+  }
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <section>
@@ -19,8 +27,11 @@ export default async function AdminEventsPage() {
       </section>
       <section>
         <h2 className="text-lg font-medium mb-3">All events</h2>
+        {sections.map((sec, si) => (
+        <div key={si} className={sec.group ? "mb-3 rounded-lg border p-2" : "mb-2"} style={sec.group ? { borderColor: "var(--g-grey-300)", background: "var(--g-grey-50)" } : undefined}>
+        {sec.group && <div className="mb-1 flex items-center justify-between px-1 text-sm"><span className="font-medium">{sec.group.name}</span><Link href={`/groups/${sec.group.id}`} className="btn-text -mr-2 py-0.5">Overview →</Link></div>}
         <ul className="space-y-2">
-          {items?.map((p) => {
+          {sec.items.map((p) => {
             const r = p.rsvps as { status: string }[];
             const c = (s: string) => r.filter((x) => x.status === s).length;
             return (
@@ -42,6 +53,8 @@ export default async function AdminEventsPage() {
             );
           })}
         </ul>
+        </div>
+        ))}
       </section>
     </div>
   );

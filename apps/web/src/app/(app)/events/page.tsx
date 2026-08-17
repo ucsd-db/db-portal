@@ -11,17 +11,29 @@ export default async function EventsPage() {
   const supabase = await createClient();
   const { data: events } = await supabase
     .from("events")
-    .select("*, rsvps(user_id, status)")
+    .select("*, rsvps(user_id, status), group:event_groups(id, name)")
     .eq("org_id", org.id)
     .gte("starts_at", cutoffIso())
     .order("starts_at");
+  // Group consecutive days that belong to the same event group.
+  type Ev = NonNullable<typeof events>[number];
+  const sections: { group: { id: string; name: string } | null; items: Ev[] }[] = [];
+  for (const ev of events ?? []) {
+    const g = ev.group as { id: string; name: string } | null;
+    const last = sections[sections.length - 1];
+    if (last && last.group?.id && last.group.id === g?.id) last.items.push(ev);
+    else sections.push({ group: g, items: [ev] });
+  }
 
   return (
     <div>
       <h1 className="text-2xl font-normal mb-4">Events</h1>
       {!events?.length && <p className="text-slate-500">No upcoming events.</p>}
+      {sections.map((sec, si) => (
+      <div key={si} className={sec.group ? "mb-4 rounded-lg border p-3" : "mb-2"} style={sec.group ? { borderColor: "var(--g-grey-300)", background: "#fff" } : undefined}>
+      {sec.group && <div className="mb-2 flex items-center justify-between"><Link href={`/groups/${sec.group.id}`} className="font-medium hover:underline">{sec.group.name}</Link><Link href={`/groups/${sec.group.id}`} className="btn-text -mr-3">Overview: lineups & rides →</Link></div>}
       <ul className="space-y-2">
-        {events?.map((p) => {
+        {sec.items.map((p) => {
           const rsvps = p.rsvps as { user_id: string; status: string }[];
           const mine = rsvps.find((r) => r.user_id === userId)?.status;
           const yes = rsvps.filter((r) => r.status === "yes").length;
@@ -45,6 +57,8 @@ export default async function EventsPage() {
           );
         })}
       </ul>
+      </div>
+      ))}
     </div>
   );
 }
