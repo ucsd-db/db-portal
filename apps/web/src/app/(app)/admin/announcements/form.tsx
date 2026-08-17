@@ -22,7 +22,7 @@ function Inner({ onPosted, justPosted }: { onPosted: () => void; justPosted: boo
     <form action={action} className="card space-y-3">
       <input name="title" required placeholder="Title" className="input" />
       <input type="hidden" name="body" value={body} />
-      <RichEditor value={body} onChange={setBody} minRows={6} placeholder="Message… (bold, bullets, links; paste from Google Docs)" />
+      <RichEditor value={body} onChange={setBody} minRows={6} placeholder="Message…" />
       <label className="flex items-center gap-2 text-sm"><input type="checkbox" name="pinned" /> Pin to top</label>
       {state.error && <p className="text-sm text-red-600">{state.error}</p>}
       {justPosted && !state.error && <p className="text-sm text-green-700">Posted.</p>}

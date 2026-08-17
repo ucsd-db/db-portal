@@ -58,8 +58,6 @@ export default function RichEditor({ value, onChange, placeholder, minRows = 6, 
         <B title="Link" active={editor.isActive("link")} on={setLink}>🔗</B>
         <B title="Image from URL" on={addImage}>🖼</B>
         <B title="Clear formatting" on={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}>Tx</B>
-        <span className="flex-1" />
-        <span className="pr-2 text-[10px]" style={{ color: "var(--g-grey-600)" }}>Paste from Google Docs keeps formatting</span>
       </div>
       <div className="relative">
         {editor.isEmpty && placeholder && <div className="pointer-events-none absolute left-3 top-2 text-sm whitespace-pre-wrap" style={{ color: "var(--g-grey-600)" }}>{placeholder}</div>}

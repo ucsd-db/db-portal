@@ -71,7 +71,7 @@ export default function FormEditor({ id, initial, events, groups }: { id: string
       {/* header card */}
       <div className="gf-header space-y-2">
         <input value={f.title} onChange={(e) => set("title", e.target.value)} placeholder="Untitled form" className="input-line text-[32px] leading-tight" />
-        <RichEditor value={f.description} onChange={(html) => set("description", html)} minRows={8} placeholder={"Form description — meetup times, reminders, who to DM…\nBold, underline, bullets and links work; paste straight from Google Docs."} />
+        <RichEditor value={f.description} onChange={(html) => set("description", html)} minRows={8} placeholder={"Form description — meetup times, reminders, who to DM…"} />
         <div className="grid grid-cols-2 gap-4 pt-2 text-sm">
           <div><label className="label">Due</label><input type="datetime-local" value={toLocal(f.due_at)} onChange={(e) => set("due_at", e.target.value ? new Date(e.target.value).toISOString() : null)} className="input" /></div>
           <div><label className="label">Status</label>
