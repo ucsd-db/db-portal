@@ -36,3 +36,9 @@ export const shortDate = (date: string) => {
   const [y, mo, d] = date.split("-").map(Number);
   return new Date(y, mo - 1, d).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
 };
+
+/** "Saturday 8/22" — the team's day-naming convention. */
+export const dayLabel = (date: string) => {
+  const [y, mo, d] = date.split("-").map(Number);
+  return `${new Date(y, mo - 1, d).toLocaleDateString(undefined, { weekday: "long" })} ${mo}/${d}`;
+};

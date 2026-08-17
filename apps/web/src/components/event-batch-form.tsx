@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createEventsBatch } from "@/app/(app)/admin/actions";
-import { combineLocal, formatTime, parseTimeText, shortDate, weekdayName } from "@/lib/time";
+import { combineLocal, dayLabel, formatTime, parseTimeText, shortDate } from "@/lib/time";
 import RichEditor from "@/components/rich-editor";
 
 type Kind = "practice" | "race" | "social" | "other";
@@ -24,7 +24,6 @@ export default function EventBatchForm({ onCreated, compact = false, groupId = n
   const [deadline, setDeadline] = useState({ date: "", time: "11:59pm" });
   const [loc, setLoc] = useState({ name: "", lat: "", lon: "" });
   const [notes, setNotes] = useState("");
-  const [nameByWeekday, setNameByWeekday] = useState(true);
   const [groupName, setGroupName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, run] = useTransition();
@@ -41,8 +40,8 @@ export default function EventBatchForm({ onCreated, compact = false, groupId = n
     const a = shortDate(dates[0]), b = shortDate(dates[dates.length - 1]);
     return dates.length > 1 ? `${KIND_LABEL[kind]} · ${a} – ${b}` : `${KIND_LABEL[kind]} · ${a}`;
   };
-  // Day label: "Saturday Practice" (weekday + type) unless a custom day label is typed.
-  const titleFor = (d: string) => (nameByWeekday ? `${weekdayName(d)} ${title.trim() || KIND_LABEL[kind]}` : title.trim() || `${KIND_LABEL[kind]} ${shortDate(d)}`);
+  // Day name convention: "Saturday 8/22" (+ optional suffix, e.g. "Saturday 8/22 · Time trials").
+  const titleFor = (d: string) => `${dayLabel(d)}${title.trim() ? ` · ${title.trim()}` : ""}`;
 
   const submit = () => {
     setError(null);
@@ -100,9 +99,8 @@ export default function EventBatchForm({ onCreated, compact = false, groupId = n
       <details className="rounded border p-3" style={{ borderColor: "var(--g-grey-300)" }}>
         <summary className="cursor-pointer text-xs font-medium" style={{ color: "var(--g-grey-600)" }}>Day labels, location, RSVP deadline, notes (optional)</summary>
         <div className="mt-3 space-y-3">
-          <div><label className="label">Day label</label>
-            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={KIND_LABEL[kind]} className="input" />
-            <label className="mt-1 flex items-center gap-1 text-xs" style={{ color: "var(--g-grey-600)" }}><input type="checkbox" checked={nameByWeekday} onChange={(e) => setNameByWeekday(e.target.checked)} /> Prefix with weekday (→ “Saturday {title.trim() || KIND_LABEL[kind]}”)</label></div>
+          <div><label className="label">Day name suffix (days are named “Saturday 8/22”; add e.g. “Time trials” → “Saturday 8/22 · Time trials”)</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="(none)" className="input" /></div>
           <div className="grid grid-cols-[1fr_110px_110px] gap-2">
             <div><label className="label">Location name</label><input value={loc.name} onChange={(e) => setLoc({ ...loc, name: e.target.value })} placeholder="Fiesta Island (SDYAC)" className="input" /></div>
             <div><label className="label">Lat</label><input value={loc.lat} onChange={(e) => setLoc({ ...loc, lat: e.target.value })} className="input" /></div>
