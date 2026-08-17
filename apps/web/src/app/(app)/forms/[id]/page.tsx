@@ -44,14 +44,14 @@ export default async function FormFillPage({ params }: { params: Promise<{ id: s
           <p className="text-xs mb-2" style={{ color: "var(--g-grey-600)" }}>Pulled from your profile so we don’t ask every week.</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1">
             <span>👤 {profile.full_name || "(no name)"}</span><span>📞 {profile.phone || "(no phone)"}</span>
-            <span>⚖️ {profile.weight_kg ? `${profile.weight_kg} kg` : "(no weight)"}</span><span>🏠 {profile.address || "(no address)"}</span>
+            <span>⚖️ {profile.weight_lb ? `${profile.weight_lb} lb` : "(no weight)"}</span><span>🏠 {profile.address || "(no address)"}</span>
           </div>
-          {(!profile.weight_kg || !profile.address) && <p className="mt-2 text-xs" style={{ color: "var(--g-red)" }}>Coaches need your weight for lineups and your address for rides — please add them.</p>}
+          {(!profile.weight_lb || !profile.address) && <p className="mt-2 text-xs" style={{ color: "var(--g-red)" }}>Coaches need your weight for lineups and your address for rides — please add them.</p>}
         </div>
 
         {form.status === "open"
           ? <FillForm formId={id} events={events} rsvpBy={Object.fromEntries(rsvpBy)} questions={(form.questions as unknown as FormQuestion[]) ?? []}
-              existingAnswers={(response?.answers as Record<string, unknown> | null) ?? null} pickups={pickups ?? []} defaultSeats={profile.car_seats} weightKg={profile.weight_kg}
+              existingAnswers={(response?.answers as Record<string, unknown> | null) ?? null} pickups={pickups ?? []} defaultSeats={profile.car_seats} weightLb={profile.weight_lb}
               submittedAt={response?.submitted_at ?? null} />
           : <div className="gf-card text-sm" style={{ color: "var(--g-grey-600)" }}>
               {form.status === "closed" ? "This form is no longer accepting responses." : "This form isn’t open yet."}

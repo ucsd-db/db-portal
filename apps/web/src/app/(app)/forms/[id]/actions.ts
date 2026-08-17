@@ -21,8 +21,8 @@ export async function submitForm(_: SubmitState, fd: FormData): Promise<SubmitSt
   if (!form || form.status !== "open") return { error: "This form is not accepting responses." };
 
   // 1. optional weight update
-  const w = String(fd.get("weight_kg") ?? "").trim();
-  if (w) await supabase.from("profiles").update({ weight_kg: Number(w) }).eq("id", user.id);
+  const w = String(fd.get("weight_lb") ?? "").trim();
+  if (w) await supabase.from("profiles").update({ weight_lb: Number(w) }).eq("id", user.id);
 
   // 2. per-event attendance → rsvps
   for (const l of links ?? []) {

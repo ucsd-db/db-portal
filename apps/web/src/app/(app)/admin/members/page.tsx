@@ -16,7 +16,7 @@ export default async function AdminMembersPage() {
         <div className="flex items-center gap-2 border-b px-3 py-2 text-xs" style={{ borderColor: "var(--g-grey-300)", background: "var(--g-green-soft)", color: "var(--g-green)" }}><span className="font-medium">▦ Roster</span></div>
         <table className="sheet !text-sm">
           <thead>
-            <tr><th className="w-8 text-center">#</th><th>Name</th><th>Email</th><th>Wt (kg)</th><th>Gender</th><th>Side</th><th>Roles</th><th>Drives</th><th>Role</th><th></th></tr>
+            <tr><th className="w-8 text-center">#</th><th>Name</th><th>Email</th><th>Wt (lb)</th><th>Gender</th><th>Side</th><th>Roles</th><th>Drives</th><th>Role</th><th></th></tr>
           </thead>
           <tbody>
             {members.map((m, i) => (
@@ -24,7 +24,7 @@ export default async function AdminMembersPage() {
                 <td className="text-center" style={{ background: "var(--g-grey-100)", color: "var(--g-grey-600)" }}>{i + 1}</td>
                 <td className="font-medium">{m.profile.full_name || "—"}</td>
                 <td className="text-slate-500">{m.profile.email}</td>
-                <td>{m.profile.weight_kg ?? "—"}</td>
+                <td>{m.profile.weight_lb ?? "—"}</td>
                 <td>{m.profile.gender ?? "—"}</td>
                 <td>{m.profile.side_preference ?? "—"}</td>
                 <td>{[m.profile.can_steer && "steer", m.profile.can_drum && "drum"].filter(Boolean).join(", ") || "—"}</td>

@@ -27,7 +27,7 @@ export default async function AdminLineupsPage({ searchParams }: { searchParams:
   for (const m of members ?? []) {
     const p = m.profile as unknown as Profile;
     if (!p || (allowed && !allowed.has(p.id))) continue;
-    roster[p.id] = { id: p.id, name: p.full_name || p.email, weight: p.weight_kg ?? 0, gender: p.gender, sidePreference: p.side_preference, canSteer: p.can_steer, canDrum: p.can_drum };
+    roster[p.id] = { id: p.id, name: p.full_name || p.email, weight: p.weight_lb ?? 0, gender: p.gender, sidePreference: p.side_preference, canSteer: p.can_steer, canDrum: p.can_drum };
   }
 
   const forEvent = (lineups ?? []).filter((l) => (eventId ? l.event_id === eventId : true));

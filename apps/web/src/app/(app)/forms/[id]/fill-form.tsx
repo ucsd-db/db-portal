@@ -22,9 +22,9 @@ function ParagraphAnswer({ name, initial }: { name: string; initial: string }) {
   return (<><input type="hidden" name={name} value={v} /><RichEditor value={v} onChange={setV} minRows={3} placeholder="Your answer" /></>);
 }
 
-export default function FillForm({ formId, events, rsvpBy, questions, existingAnswers, pickups, defaultSeats, weightKg, submittedAt }: {
+export default function FillForm({ formId, events, rsvpBy, questions, existingAnswers, pickups, defaultSeats, weightLb, submittedAt }: {
   formId: string; events: { prompt: string | null; event: Event }[]; rsvpBy: Record<string, Rsvp>; questions: FormQuestion[];
-  existingAnswers: Record<string, unknown> | null; pickups: PickupLocation[]; defaultSeats: number | null; weightKg: number | null; submittedAt: string | null;
+  existingAnswers: Record<string, unknown> | null; pickups: PickupLocation[]; defaultSeats: number | null; weightLb: number | null; submittedAt: string | null;
 }) {
   const [state, action, pending] = useActionState<SubmitState, FormData>(submitForm, {});
   const a = (id: string) => existingAnswers?.[id];
@@ -32,8 +32,8 @@ export default function FillForm({ formId, events, rsvpBy, questions, existingAn
     <form action={action} className="space-y-3">
       <input type="hidden" name="form_id" value={formId} />
 
-      <Q title="🏆 What's your current weight? (kg)" help="Coaches need this to make lineups. Leave as-is if unchanged — saved to your profile.">
-        <input name="weight_kg" type="number" step="0.1" min={30} max={200} defaultValue={weightKg ?? ""} placeholder="Your answer" className="input-line w-1/2" />
+      <Q title="🏆 What's your current weight? (lb)" help="Coaches need this to make lineups. Leave as-is if unchanged — saved to your profile.">
+        <input name="weight_lb" type="number" step="0.1" min={60} max={450} defaultValue={weightLb ?? ""} placeholder="Your answer" className="input-line w-1/2" />
       </Q>
 
       {events.map(({ event, prompt }, i) => (
