@@ -14,14 +14,16 @@ export async function saveProfile(_: ProfileState, formData: FormData): Promise<
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: "Not signed in" };
 
-  const { data: current } = await supabase.from("profiles").select("address, lat, lon").eq("id", user.id).single();
-  const address = str(formData.get("address"));
+  const { data: current } = await supabase.from("profiles").select("address, city, zipcode, lat, lon").eq("id", user.id).single();
+  const address = str(formData.get("address")), city = str(formData.get("city")), zipcode = str(formData.get("zipcode"));
   let lat = current?.lat ?? null, lon = current?.lon ?? null, geocoded = false;
+  const full = [address, city, zipcode].filter(Boolean).join(", ");
+  const prevFull = [current?.address, current?.city, current?.zipcode].filter(Boolean).join(", ");
 
   // Geocode via Nominatim only when the address changed (free API, 1 req/s policy).
-  if (address && address !== current?.address) {
+  if (address && full !== prevFull) {
     try {
-      const res = await fetch(buildNominatimSearchUrl(address), {
+      const res = await fetch(buildNominatimSearchUrl(full), {
         headers: { "User-Agent": "db-team-portal (contact via app admin)" },
       });
       const loc = parseNominatimResult(await res.json());
@@ -38,7 +40,7 @@ export async function saveProfile(_: ProfileState, formData: FormData): Promise<
     side_preference: (str(formData.get("side_preference")) as "left" | "right" | "either" | null),
     can_steer: formData.get("can_steer") === "on",
     can_drum: formData.get("can_drum") === "on",
-    address, lat, lon,
+    address, city, zipcode, lat, lon,
     can_drive: formData.get("can_drive") === "on",
     car_seats: num(formData.get("car_seats")),
   }).eq("id", user.id);
