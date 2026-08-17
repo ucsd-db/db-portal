@@ -30,7 +30,11 @@ export default function ProfileForm({ profile: p }: { profile: Profile }) {
       <section className="card space-y-3">
         <h2 className="font-semibold">Carpool</h2>
         <div><label className="label">Home address (for pickup matching)</label>
-          <input name="address" defaultValue={p.address ?? ""} placeholder="123 Main St, City, State" className="input" />
+          <input name="address" defaultValue={p.address ?? ""} placeholder="123 Main St" className="input" />
+          <div className="grid grid-cols-2 gap-2 mt-2">
+            <input name="city" defaultValue={p.city ?? ""} placeholder="City" className="input" />
+            <input name="zipcode" defaultValue={p.zipcode ?? ""} placeholder="Zipcode" className="input" />
+          </div>
           <p className="text-xs text-slate-500 mt-1">{p.lat ? `📍 Located (${p.lat.toFixed(3)}, ${p.lon?.toFixed(3)})` : "Not located yet"}</p></div>
         <div className="flex items-center gap-6 text-sm">
           <label className="flex items-center gap-2"><input type="checkbox" name="can_drive" defaultChecked={p.can_drive} /> I can usually drive</label>

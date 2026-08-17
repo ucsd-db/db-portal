@@ -136,3 +136,81 @@ export async function deleteGroup(fd: FormData) {
   revalidatePath("/admin/events"); revalidatePath("/events"); revalidatePath("/dashboard");
   redirect("/admin/events");
 }
+
+export type MemberInput = { email: string; full_name?: string; address?: string | null; city?: string | null; zipcode?: string | null; lat?: number | null; lon?: number | null; can_drive?: boolean; gender?: "male" | "female" | "other" | null; weight_lb?: number | null; car_seats?: number | null };
+
+async function addOne(orgId: string, m: MemberInput) {
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("admin_add_member", {
+    p_org: orgId, p_email: m.email, p_full_name: m.full_name ?? "", p_address: m.address ?? null, p_city: m.city ?? null, p_zipcode: m.zipcode ?? null,
+    p_lat: m.lat ?? null, p_lon: m.lon ?? null, p_can_drive: m.can_drive ?? false, p_gender: m.gender ?? null, p_weight_lb: m.weight_lb ?? null, p_car_seats: m.car_seats ?? null,
+  });
+  return { status: data as string | null, error: error?.message };
+}
+
+const optNum = (v: FormDataEntryValue | null) => { const s = String(v ?? "").trim(); return s ? Number(s) : null; };
+const yes = (v: string | undefined | null) => /^(y|yes|true|1|driver|drives)$/i.test(String(v ?? "").trim());
+const normGender = (v: string | undefined | null): "male" | "female" | "other" | null => {
+  const s = String(v ?? "").trim().toLowerCase(); if (!s) return null;
+  if (s.startsWith("m")) return "male"; if (s.startsWith("f") || s.startsWith("w")) return "female"; return "other";
+};
+
+export async function addMember(_: AdminState, fd: FormData): Promise<AdminState & { status?: string }> {
+  const { org } = await requireAdmin();
+  const email = String(fd.get("email") ?? "").trim().toLowerCase();
+  if (!email) return { error: "Email is required" };
+  const g = str(fd.get("gender"));
+  const r = await addOne(org.id, {
+    email, full_name: String(fd.get("full_name") ?? "").trim(), address: str(fd.get("address")), city: str(fd.get("city")), zipcode: str(fd.get("zipcode")),
+    lat: optNum(fd.get("lat")), lon: optNum(fd.get("lon")), can_drive: fd.get("can_drive") === "on", gender: (g as "male" | "female" | "other" | null), weight_lb: optNum(fd.get("weight_lb")),
+  });
+  if (r.error) return { error: r.error };
+  revalidatePath("/admin/members");
+  return { ok: true, status: r.status ?? undefined };
+}
+
+/** Paste-a-sheet import. Header row with any of: Name, Email, Address, Latitude, Longitude, City, Zipcode, Drives, Gender, W(lb) / Weight. Tab or comma separated. */
+export async function importMembers(_: AdminState, fd: FormData): Promise<AdminState & { summary?: string }> {
+  const { org } = await requireAdmin();
+  const text = String(fd.get("csv") ?? "").trim();
+  if (!text) return { error: "Paste some rows first" };
+  const lines = text.split(/\r?\n/).filter((l) => l.trim());
+  const sep = lines[0].includes("\t") ? "\t" : ",";
+  const split = (l: string) => sep === "\t" ? l.split("\t") : (l.match(/("([^"]|"")*"|[^,]*)(,|$)/g) ?? []).map((c) => c.replace(/,$/, "").replace(/^"|"$/g, "").replace(/""/g, '"')).slice(0, -1);
+  const header = split(lines[0]).map((h) => h.trim().toLowerCase());
+  const col = (...names: string[]) => header.findIndex((h) => names.some((n) => h === n || h.startsWith(n)));
+  const iEmail = col("email"), iName = col("name", "full name"), iAddr = col("address"), iLat = col("latitude", "lat"), iLon = col("longitude", "lon", "lng"),
+    iCity = col("city"), iZip = col("zip"), iDrives = col("drives", "driver", "can drive"), iGender = col("gender"), iW = col("w(lb)", "w (lb)", "weight", "w");
+  if (iEmail < 0) return { error: 'Header must include an "Email" column' };
+  let linked = 0, pending = 0, skipped = 0; const errors: string[] = [];
+  for (const line of lines.slice(1)) {
+    const c = split(line); const at = (i: number) => (i >= 0 ? (c[i] ?? "").trim() : "");
+    const email = at(iEmail).toLowerCase(); if (!email.includes("@")) { skipped++; continue; }
+    const r = await addOne(org.id, {
+      email, full_name: at(iName), address: at(iAddr) || null, city: at(iCity) || null, zipcode: at(iZip) || null,
+      lat: at(iLat) ? Number(at(iLat)) : null, lon: at(iLon) ? Number(at(iLon)) : null, can_drive: yes(at(iDrives)), gender: normGender(at(iGender)),
+      weight_lb: at(iW) ? Number(at(iW).replace(/[^0-9.]/g, "")) || null : null,
+    });
+    if (r.error) errors.push(`${email}: ${r.error}`); else if (r.status === "linked") linked++; else pending++;
+  }
+  revalidatePath("/admin/members");
+  return { ok: true, summary: `${linked} linked to existing accounts, ${pending} added as pending${skipped ? `, ${skipped} skipped (no email)` : ""}${errors.length ? `. Errors: ${errors.join("; ")}` : ""}` };
+}
+
+export async function updateMember(fd: FormData) {
+  await requireAdmin();
+  const supabase = await createClient();
+  const g = str(fd.get("gender"));
+  await supabase.from("profiles").update({
+    full_name: String(fd.get("full_name") ?? "").trim(), address: str(fd.get("address")), city: str(fd.get("city")), zipcode: str(fd.get("zipcode")),
+    lat: optNum(fd.get("lat")), lon: optNum(fd.get("lon")), can_drive: fd.get("can_drive") === "on", gender: (g as "male" | "female" | "other" | null), weight_lb: optNum(fd.get("weight_lb")),
+  }).eq("id", String(fd.get("user_id")));
+  revalidatePath("/admin/members");
+}
+
+export async function removePending(fd: FormData) {
+  const { org } = await requireAdmin();
+  const supabase = await createClient();
+  await supabase.from("pending_members").delete().eq("org_id", org.id).eq("email", String(fd.get("email")));
+  revalidatePath("/admin/members");
+}
