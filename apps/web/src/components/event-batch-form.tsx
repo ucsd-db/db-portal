@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createEventsBatch } from "@/app/(app)/admin/actions";
 import { combineLocal, dayLabel, formatTime, parseTimeText, shortDate } from "@/lib/time";
 import RichEditor from "@/components/rich-editor";
+import MultiDatePicker from "@/components/multi-date-picker";
 
 type Kind = "practice" | "race" | "social" | "other";
 const KIND_LABEL: Record<Kind, string> = { practice: "Practice", race: "Race", social: "Social", other: "Event" };
@@ -18,7 +19,6 @@ export default function EventBatchForm({ onCreated, compact = false, groupId = n
   const [kind, setKind] = useState<Kind>("practice");
   const [title, setTitle] = useState("");
   const [dates, setDates] = useState<string[]>([]);
-  const [dateInput, setDateInput] = useState("");
   const [start, setStart] = useState("8:45am");
   const [end, setEnd] = useState("");
   const [deadline, setDeadline] = useState({ date: "", time: "11:59pm" });
@@ -29,7 +29,6 @@ export default function EventBatchForm({ onCreated, compact = false, groupId = n
   const [pending, run] = useTransition();
 
   const startT = parseTimeText(start), endT = end ? parseTimeText(end) : null;
-  const addDate = (d: string) => { if (d && !dates.includes(d)) setDates([...dates, d].sort()); setDateInput(""); };
   const addNextWeekend = () => {
     const out = [...dates]; const t = new Date();
     for (let i = 1; i <= 7; i++) { const d = new Date(t); d.setDate(t.getDate() + i); if (d.getDay() === 6 || d.getDay() === 0) { const s = d.toLocaleDateString("sv"); if (!out.includes(s)) out.push(s); } }
@@ -73,11 +72,13 @@ export default function EventBatchForm({ onCreated, compact = false, groupId = n
       )}
 
       <div>
-        <label className="label">Days — one day card per date</label>
-        <div className="flex flex-wrap items-center gap-2">
-          <input type="date" value={dateInput} onChange={(e) => setDateInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDate(dateInput); } }} className="input w-44" />
-          <button type="button" onClick={() => addDate(dateInput)} className="btn-secondary py-1.5">Add</button>
-          <button type="button" onClick={addNextWeekend} className="btn-text">+ next Sat & Sun</button>
+        <label className="label">Days — one day card per date (click to select, drag to select many, click again to deselect)</label>
+        <div className="flex flex-wrap items-start gap-3">
+          <MultiDatePicker value={dates} onChange={setDates} />
+          <div className="flex flex-col gap-1">
+            <button type="button" onClick={addNextWeekend} className="btn-text text-left">+ next Sat & Sun</button>
+            {dates.length > 0 && <button type="button" onClick={() => setDates([])} className="btn-text text-left">Clear all</button>}
+          </div>
         </div>
         <div className="mt-2 flex flex-wrap gap-1.5">
           {dates.map((d) => (
