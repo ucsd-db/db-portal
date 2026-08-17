@@ -26,7 +26,7 @@ export default function AttendanceFields({ prefix, existing, pickups, defaultSea
       {choice === "yes_driver" && (
         <div className="ml-2 mt-3 pl-3 border-l-2 text-sm space-y-1" style={{ borderColor: "var(--g-purple)" }}>
           <div className="font-medium">How many can you drive (excluding you)?</div>
-          <input name={`${prefix}seats`} type="number" min={1} max={14} required defaultValue={existing?.seats ?? (defaultSeats ? Math.max(1, defaultSeats - 1) : 3)} className="input-line w-40" />
+          <input name={`${prefix}seats`} type="number" min={1} max={14} required defaultValue={existing?.seats ?? (defaultSeats ? defaultSeats : 3)} className="input-line w-40" />
         </div>
       )}
       {choice === "yes_needs_ride" && (

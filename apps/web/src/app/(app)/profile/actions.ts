@@ -41,8 +41,7 @@ export async function saveProfile(_: ProfileState, formData: FormData): Promise<
     can_steer: formData.get("can_steer") === "on",
     can_drum: formData.get("can_drum") === "on",
     address, city, zipcode, lat, lon,
-    can_drive: formData.get("can_drive") === "on",
-    car_seats: num(formData.get("car_seats")),
+    car_passengers: num(formData.get("car_passengers")) ?? 0,
   }).eq("id", user.id);
   if (error) return { error: error.message };
   revalidatePath("/profile");

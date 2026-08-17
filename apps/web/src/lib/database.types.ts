@@ -21,8 +21,7 @@ export type Profile = {
   zipcode: string | null;
   lat: number | null;
   lon: number | null;
-  can_drive: boolean;
-  car_seats: number | null;
+  car_passengers: number;
   created_at: string;
   updated_at: string;
 };
@@ -36,8 +35,7 @@ export type PendingMember = {
   zipcode: string | null;
   lat: number | null;
   lon: number | null;
-  can_drive: boolean;
-  car_seats: number | null;
+  car_passengers: number;
   gender: "male" | "female" | "other" | null;
   weight_lb: number | null;
   created_at: string;
@@ -184,13 +182,13 @@ export type Database = {
     Tables: {
       profiles: {
         Row: Row<Profile>;
-        Insert: Insert<Profile, "phone" | "weight_lb" | "gender" | "side_preference" | "can_steer" | "can_drum" | "address" | "city" | "zipcode" | "lat" | "lon" | "can_drive" | "car_seats" | "created_at" | "updated_at" | "full_name">;
+        Insert: Insert<Profile, "phone" | "weight_lb" | "gender" | "side_preference" | "can_steer" | "can_drum" | "address" | "city" | "zipcode" | "lat" | "lon" | "car_passengers" | "created_at" | "updated_at" | "full_name">;
         Update: Partial<Profile>;
         Relationships: [];
       };
       pending_members: {
         Row: Row<PendingMember>;
-        Insert: Insert<PendingMember, "full_name" | "address" | "city" | "zipcode" | "lat" | "lon" | "can_drive" | "car_seats" | "gender" | "weight_lb" | "created_at">;
+        Insert: Insert<PendingMember, "full_name" | "address" | "city" | "zipcode" | "lat" | "lon" | "car_passengers" | "gender" | "weight_lb" | "created_at">;
         Update: Partial<PendingMember>;
         Relationships: [
           { foreignKeyName: "pending_members_org_id_fkey"; columns: ["org_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },
@@ -312,7 +310,7 @@ export type Database = {
       shares_org_with: { Args: { other: string }; Returns: boolean };
       admin_of_user: { Args: { other: string }; Returns: boolean };
       admin_add_member: {
-        Args: { p_org: string; p_email: string; p_full_name?: string; p_address?: string | null; p_city?: string | null; p_zipcode?: string | null; p_lat?: number | null; p_lon?: number | null; p_can_drive?: boolean; p_gender?: string | null; p_weight_lb?: number | null; p_car_seats?: number | null };
+        Args: { p_org: string; p_email: string; p_full_name?: string; p_address?: string | null; p_city?: string | null; p_zipcode?: string | null; p_lat?: number | null; p_lon?: number | null; p_car_passengers?: number | null; p_gender?: string | null; p_weight_lb?: number | null };
         Returns: string;
       };
     };
