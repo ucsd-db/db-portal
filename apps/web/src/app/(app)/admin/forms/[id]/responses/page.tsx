@@ -6,6 +6,7 @@ import { fmtDateTime } from "@/lib/format";
 import { toChoice, ATTENDANCE_OPTIONS } from "@/lib/attendance";
 import type { FormQuestion, Profile, Rsvp } from "@/lib/database.types";
 import ExportCsv from "./export-csv";
+import { htmlToText } from "@/lib/html";
 import FormTabs from "@/components/form-tabs";
 
 const choiceLabel = Object.fromEntries(ATTENDANCE_OPTIONS.map((o) => [o.value, o.label.replace(/ [^\w\s]+$/u, "")]));
@@ -48,7 +49,7 @@ export default async function FormResponsesPage({ params }: { params: Promise<{ 
     if (a == null || a === "") return "";
     if (Array.isArray(a)) return a.join(", ");
     if (typeof a === "boolean") return a ? "Yes" : "No";
-    return String(a);
+    return htmlToText(String(a));
   };
 
   const header = ["Name", "Email", "Weight (kg)", "Phone", ...events.map((e) => e.title), ...questions.map((q) => q.label), "Submitted"];
@@ -95,7 +96,7 @@ export default async function FormResponsesPage({ params }: { params: Promise<{ 
         <table className="sheet">
           <thead><tr><th className="w-8 text-center">#</th>{header.map((h) => <th key={h} className="whitespace-nowrap">{h}</th>)}</tr></thead>
           <tbody>
-            {rows.map((r, i) => <tr key={i}><td className="text-center" style={{ background: "var(--g-grey-100)", color: "var(--g-grey-600)" }}>{i + 1}</td>{r.map((c, j) => <td key={j} className="max-w-[240px]">{String(c)}</td>)}</tr>)}
+            {rows.map((r, i) => <tr key={i}><td className="text-center" style={{ background: "var(--g-grey-100)", color: "var(--g-grey-600)" }}>{i + 1}</td>{r.map((c, j) => <td key={j} className="max-w-[240px] whitespace-pre-wrap">{String(c)}</td>)}</tr>)}
             {!rows.length && <tr><td colSpan={header.length + 1} className="p-3" style={{ color: "var(--g-grey-600)" }}>No responses yet.</td></tr>}
           </tbody>
         </table>

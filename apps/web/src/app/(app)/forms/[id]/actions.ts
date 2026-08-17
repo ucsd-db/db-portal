@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { parseAttendance } from "@/lib/attendance";
 import type { FormQuestion, Json } from "@/lib/database.types";
+import { cleanHtml, htmlToText } from "@/lib/html";
 
 export type SubmitState = { error?: string; saved?: boolean };
 
@@ -40,6 +41,7 @@ export async function submitForm(_: SubmitState, fd: FormData): Promise<SubmitSt
     if (q.type === "multi_choice") val = fd.getAll(key).map(String);
     else if (q.type === "yes_no") { const s = fd.get(key); val = s === "yes" ? true : s === "no" ? false : null; }
     else if (q.type === "number") { const s = String(fd.get(key) ?? "").trim(); val = s ? Number(s) : null; }
+    else if (q.type === "long_text") { const raw = String(fd.get(key) ?? "").trim(); const clean = raw ? cleanHtml(raw) : ""; val = htmlToText(clean).trim() ? clean : null; }
     else val = String(fd.get(key) ?? "").trim() || null;
     const empty = val === null || (Array.isArray(val) && !val.length);
     if (q.required && empty) return { error: `"${q.label}" is required.` };

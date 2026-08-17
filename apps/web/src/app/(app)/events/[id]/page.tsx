@@ -7,6 +7,7 @@ import type { Rsvp } from "@/lib/database.types";
 import type { Lineup } from "@db/lineup";
 import type { Car } from "@db/carpool";
 import LineupView from "@/components/lineup-view";
+import RichText from "@/components/rich-text";
 
 export default async function EventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -35,7 +36,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
         <h1 className="text-2xl font-normal">{event.title} <span className="text-xs uppercase text-slate-400 font-normal">{event.kind}</span></h1>
         <p className="text-slate-600">{fmtDateTime(event.starts_at)}{event.ends_at && ` – ${new Date(event.ends_at).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" })}`}</p>
         {event.location_name && <p className="text-slate-600">📍 {event.location_name}</p>}
-        {event.notes && <p className="mt-3 whitespace-pre-wrap text-sm">{event.notes}</p>}
+        {event.notes && <RichText text={event.notes} className="mt-3" />}
         {event.rsvp_deadline && <p className="mt-2 text-xs text-slate-500">RSVP by {fmtDateTime(event.rsvp_deadline)}{closed && " (closed)"}</p>}
         {!!lineups?.length && (
           <div className="mt-6">

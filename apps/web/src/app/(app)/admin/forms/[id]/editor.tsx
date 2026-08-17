@@ -8,6 +8,7 @@ import { fmtDateTime } from "@/lib/format";
 import { deleteForm, saveForm, type FormPayload } from "../actions";
 import EventBatchForm from "@/components/event-batch-form";
 import RichEditor from "@/components/rich-editor";
+import RichText from "@/components/rich-text";
 
 type EventOpt = { id: string; title: string; kind: string; starts_at: string };
 const TYPES: { value: QuestionType; label: string; icon: string }[] = [
@@ -113,8 +114,8 @@ export default function FormEditor({ id, initial, events }: { id: string; initia
                 </select>
               )}
             </div>
-            {active && <input value={q.help ?? ""} onChange={(e) => updQ(q.id, { help: e.target.value || undefined })} placeholder="Description (optional)" className="input-line text-xs" />}
-            {!active && q.help && <p className="text-xs" style={{ color: "var(--g-grey-600)" }}>{q.help}</p>}
+            {active && <RichEditor value={q.help ?? ""} onChange={(html) => updQ(q.id, { help: html || undefined })} minRows={2} placeholder="Description (optional)" className="text-xs" />}
+            {!active && q.help && <RichText text={q.help} className="!text-xs" />}
 
             {(q.type === "single_choice" || q.type === "multi_choice") && (
               <div className="space-y-1">
