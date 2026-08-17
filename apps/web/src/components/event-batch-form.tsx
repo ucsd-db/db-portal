@@ -37,11 +37,11 @@ export default function EventBatchForm({ onCreated, compact = false, groupId = n
     setDates(out.sort());
   };
   const defaultGroupName = () => {
-    if (!dates.length) return "";
-    const base = title.trim() || KIND_LABEL[kind];
+    if (!dates.length) return KIND_LABEL[kind];
     const a = shortDate(dates[0]), b = shortDate(dates[dates.length - 1]);
-    return dates.length > 1 ? `${base} · ${a} – ${b}` : base;
+    return dates.length > 1 ? `${KIND_LABEL[kind]} · ${a} – ${b}` : `${KIND_LABEL[kind]} · ${a}`;
   };
+  // Day label: "Saturday Practice" (weekday + type) unless a custom day label is typed.
   const titleFor = (d: string) => (nameByWeekday ? `${weekdayName(d)} ${title.trim() || KIND_LABEL[kind]}` : title.trim() || `${KIND_LABEL[kind]} ${shortDate(d)}`);
 
   const submit = () => {
@@ -63,16 +63,18 @@ export default function EventBatchForm({ onCreated, compact = false, groupId = n
 
   return (
     <div className={`space-y-3 text-sm ${compact ? "" : "card"}`}>
-      <div className="grid grid-cols-[130px_1fr] gap-3">
-        <div><label className="label">Type</label>
-          <select value={kind} onChange={(e) => setKind(e.target.value as Kind)} className="input"><option value="practice">Practice</option><option value="race">Race</option><option value="social">Social</option><option value="other">Other</option></select></div>
-        <div><label className="label">Name</label>
-          <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={KIND_LABEL[kind]} className="input" />
-          <label className="mt-1 flex items-center gap-1 text-xs" style={{ color: "var(--g-grey-600)" }}><input type="checkbox" checked={nameByWeekday} onChange={(e) => setNameByWeekday(e.target.checked)} /> Prefix with weekday (→ “Saturday {title.trim() || KIND_LABEL[kind]}”)</label></div>
-      </div>
+      {!groupId && (
+        <div className="grid grid-cols-[130px_1fr] gap-3">
+          <div><label className="label">Type</label>
+            <select value={kind} onChange={(e) => setKind(e.target.value as Kind)} className="input"><option value="practice">Practice</option><option value="race">Race</option><option value="social">Social</option><option value="other">Other</option></select></div>
+          <div><label className="label">Event name</label>
+            <input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder={defaultGroupName()} className="input" />
+            <div className="text-xs mt-0.5" style={{ color: "var(--g-grey-600)" }}>e.g. “Spring Week 8 Practice”, “Long Beach Race”. Days are added inside it below.</div></div>
+        </div>
+      )}
 
       <div>
-        <label className="label">Dates — one event per date</label>
+        <label className="label">Days — one day card per date</label>
         <div className="flex flex-wrap items-center gap-2">
           <input type="date" value={dateInput} onChange={(e) => setDateInput(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); addDate(dateInput); } }} className="input w-44" />
           <button type="button" onClick={() => addDate(dateInput)} className="btn-secondary py-1.5">Add</button>
@@ -86,10 +88,6 @@ export default function EventBatchForm({ onCreated, compact = false, groupId = n
         </div>
       </div>
 
-      {!groupId && dates.length > 1 && (
-        <div><label className="label">Group name — the wrapper for all these days (one overview screen for lineups & rides)</label>
-          <input value={groupName} onChange={(e) => setGroupName(e.target.value)} placeholder={defaultGroupName()} className="input" /></div>
-      )}
       <div className="grid grid-cols-2 gap-3">
         <div><label className="label">Start time</label>
           <input value={start} onChange={(e) => setStart(e.target.value)} placeholder="8:45am" className="input" />
@@ -100,8 +98,11 @@ export default function EventBatchForm({ onCreated, compact = false, groupId = n
       </div>
 
       <details className="rounded border p-3" style={{ borderColor: "var(--g-grey-300)" }}>
-        <summary className="cursor-pointer text-xs font-medium" style={{ color: "var(--g-grey-600)" }}>Location, RSVP deadline, notes (optional)</summary>
+        <summary className="cursor-pointer text-xs font-medium" style={{ color: "var(--g-grey-600)" }}>Day labels, location, RSVP deadline, notes (optional)</summary>
         <div className="mt-3 space-y-3">
+          <div><label className="label">Day label</label>
+            <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={KIND_LABEL[kind]} className="input" />
+            <label className="mt-1 flex items-center gap-1 text-xs" style={{ color: "var(--g-grey-600)" }}><input type="checkbox" checked={nameByWeekday} onChange={(e) => setNameByWeekday(e.target.checked)} /> Prefix with weekday (→ “Saturday {title.trim() || KIND_LABEL[kind]}”)</label></div>
           <div className="grid grid-cols-[1fr_110px_110px] gap-2">
             <div><label className="label">Location name</label><input value={loc.name} onChange={(e) => setLoc({ ...loc, name: e.target.value })} placeholder="Fiesta Island (SDYAC)" className="input" /></div>
             <div><label className="label">Lat</label><input value={loc.lat} onChange={(e) => setLoc({ ...loc, lat: e.target.value })} className="input" /></div>
@@ -117,11 +118,11 @@ export default function EventBatchForm({ onCreated, compact = false, groupId = n
 
       {dates.length > 0 && startT && (
         <div className="rounded p-2 text-xs" style={{ background: "var(--g-grey-100)", color: "var(--g-grey-600)" }}>
-          Will create: {dates.map((d) => `${titleFor(d)} (${shortDate(d)} ${formatTime(startT.h, startT.m)}${endT ? `–${formatTime(endT.h, endT.m)}` : ""})`).join(" · ")}
+          {!groupId && <><b>{groupName.trim() || defaultGroupName()}</b> with days: </>}{dates.map((d) => `${titleFor(d)} (${shortDate(d)} ${formatTime(startT.h, startT.m)}${endT ? `–${formatTime(endT.h, endT.m)}` : ""})`).join(" · ")}
         </div>
       )}
       {error && <p className="text-sm" style={{ color: "var(--g-red)" }}>{error}</p>}
-      <button type="button" onClick={submit} disabled={pending || !dates.length} className="btn-primary">{pending ? "Creating…" : `Create ${dates.length || ""} event${dates.length === 1 ? "" : "s"}${onCreated ? " & add to form" : ""}`}</button>
+      <button type="button" onClick={submit} disabled={pending || !dates.length} className="btn-primary">{pending ? "Creating…" : groupId ? `Add ${dates.length || ""} day${dates.length === 1 ? "" : "s"}` : `Create event with ${dates.length || ""} day${dates.length === 1 ? "" : "s"}${onCreated ? " & add to form" : ""}`}</button>
     </div>
   );
 }

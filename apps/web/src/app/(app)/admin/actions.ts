@@ -89,7 +89,7 @@ export async function createEventsBatch(input: {
   kind: "practice" | "race" | "social" | "other";
   items: { title: string; starts_at: string; ends_at: string | null; rsvp_deadline: string | null }[];
   location_name: string | null; location_lat: number | null; location_lon: number | null; notes: string | null;
-  /** When set (and 2+ items), an event group wrapping all the days is created with this name. */
+  /** When set, an event (group) wrapping all the days is created with this name. */
   groupName?: string | null;
   /** Or attach the new days to an existing group. */
   groupId?: string | null;
@@ -98,7 +98,7 @@ export async function createEventsBatch(input: {
   if (!input.items.length) return { error: "Add at least one date" };
   const supabase = await createClient();
   let groupId: string | null = input.groupId ?? null;
-  if (!groupId && input.groupName && input.items.length > 1) {
+  if (!groupId && input.groupName) {
     const { data: g, error: ge } = await supabase.from("event_groups").insert({ org_id: org.id, name: input.groupName.trim(), kind: input.kind, created_by: userId }).select("id").single();
     if (ge) return { error: ge.message };
     groupId = g.id;
