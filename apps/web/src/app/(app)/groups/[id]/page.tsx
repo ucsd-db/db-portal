@@ -6,7 +6,8 @@ import LocalTime from "@/components/local-time";
 import LineupView from "@/components/lineup-view";
 import RichText from "@/components/rich-text";
 import EventBatchForm from "@/components/event-batch-form";
-import { deleteGroup, renameGroup } from "@/app/(app)/admin/actions";
+import { deleteEvent, deleteGroup, renameGroup } from "@/app/(app)/admin/actions";
+import ConfirmForm from "@/components/confirm-form";
 import { createFormForGroup } from "@/app/(app)/admin/forms/actions";
 import type { Lineup } from "@db/lineup";
 import type { Car } from "@db/carpool";
@@ -96,7 +97,13 @@ export default async function GroupOverviewPage({ params }: { params: Promise<{ 
           const cars = ((cp?.data as { cars?: Car[] } | null)?.cars ?? []);
           return (
             <section key={ev.id} className="card space-y-3 !p-4">
-              <header>
+              <header className="relative">
+                {isAdmin && (
+                  <ConfirmForm action={deleteEvent} message={`Delete "${ev.title}" and its RSVPs, lineups and carpool? This can't be undone.`} className="absolute right-0 top-0">
+                    <input type="hidden" name="id" value={ev.id} />
+                    <button className="btn-danger-text py-0.5 text-xs" title="Delete this day">✕ day</button>
+                  </ConfirmForm>
+                )}
                 <Link href={`/events/${ev.id}`} className="font-medium text-base hover:underline">{ev.title}</Link>
                 <div className="text-sm" style={{ color: "var(--g-grey-600)" }}><LocalTime iso={ev.starts_at} />{ev.ends_at && <> – <LocalTime iso={ev.ends_at} mode="time" /></>}{ev.location_name && ` · 📍 ${ev.location_name}`}</div>
                 {ev.notes && <RichText text={ev.notes} className="!text-xs mt-1" />}
