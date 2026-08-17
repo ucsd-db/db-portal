@@ -37,10 +37,15 @@ export async function togglePin(fd: FormData) {
 }
 
 export async function deleteEvent(fd: FormData) {
-  await requireAdmin();
+  const { org } = await requireAdmin();
   const supabase = await createClient();
-  await supabase.from("events").delete().eq("id", String(fd.get("id")));
+  const id = String(fd.get("id"));
+  const { data: ev } = await supabase.from("events").select("group_id").eq("id", id).eq("org_id", org.id).maybeSingle();
+  await supabase.from("events").delete().eq("id", id).eq("org_id", org.id);
   revalidatePath("/events"); revalidatePath("/dashboard"); revalidatePath("/admin/events");
+  if (ev?.group_id) revalidatePath(`/groups/${ev.group_id}`);
+  const back = String(fd.get("redirect") ?? "");
+  if (back) redirect(back);
 }
 
 export async function setMemberRole(fd: FormData) {

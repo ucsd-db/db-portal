@@ -5,6 +5,7 @@ import LocalTime from "@/components/local-time";
 import { deleteEvent, deleteGroup } from "../actions";
 import { createFormForGroup } from "../forms/actions";
 import EventBatchForm from "@/components/event-batch-form";
+import ConfirmForm from "@/components/confirm-form";
 import type { EventGroup } from "@/lib/database.types";
 
 /** Admin: Events are containers; each holds Day cards. */
@@ -49,7 +50,7 @@ export default async function AdminEventsPage() {
                     <div className="flex items-center gap-1 text-xs">
                       <Link href={`/groups/${group.id}`} className="btn-text py-0.5">Overview</Link>
                       <form action={createFormForGroup}><input type="hidden" name="group_id" value={group.id} /><button className="btn-text py-0.5">📝 Form</button></form>
-                      <form action={deleteGroup}><input type="hidden" name="id" value={group.id} /><input type="hidden" name="with_events" value="on" /><button className="btn-danger-text py-0.5">Delete</button></form>
+                      <ConfirmForm action={deleteGroup} message={`Delete "${group.name}" and all ${ds.length} of its days?`}><input type="hidden" name="id" value={group.id} /><input type="hidden" name="with_events" value="on" /><button className="btn-danger-text py-0.5">Delete</button></ConfirmForm>
                     </div>
                   )}
                 </div>
@@ -70,7 +71,7 @@ export default async function AdminEventsPage() {
                         <div className="flex shrink-0 items-center gap-1 text-xs">
                           <Link href={`/admin/lineups?event=${p.id}`} className="btn-text py-0.5">Lineups</Link>
                           <Link href={`/admin/carpool?event=${p.id}`} className="btn-text py-0.5">Carpool</Link>
-                          <form action={deleteEvent}><input type="hidden" name="id" value={p.id} /><button className="btn-danger-text py-0.5">✕</button></form>
+                          <ConfirmForm action={deleteEvent} message={`Delete "${p.title}"?`}><input type="hidden" name="id" value={p.id} /><button className="btn-danger-text py-0.5" title="Delete day">✕</button></ConfirmForm>
                         </div>
                       </li>
                     );

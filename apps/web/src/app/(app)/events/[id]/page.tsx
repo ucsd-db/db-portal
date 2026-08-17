@@ -9,6 +9,8 @@ import type { Lineup } from "@db/lineup";
 import type { Car } from "@db/carpool";
 import LineupView from "@/components/lineup-view";
 import RichText from "@/components/rich-text";
+import ConfirmForm from "@/components/confirm-form";
+import { deleteEvent } from "@/app/(app)/admin/actions";
 
 export default async function EventPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -35,6 +37,13 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
     <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
       <section>
         {event.group && <Link href={`/groups/${(event.group as { id: string; name: string }).id}`} className="text-xs hover:underline" style={{ color: "var(--g-blue)" }}>← {(event.group as { id: string; name: string }).name}</Link>}
+        {isAdmin && (
+          <ConfirmForm action={deleteEvent} message={`Delete "${event.title}" and its RSVPs, lineups and carpool?`} className="float-right">
+            <input type="hidden" name="id" value={event.id} />
+            <input type="hidden" name="redirect" value={event.group ? `/groups/${(event.group as { id: string }).id}` : "/events"} />
+            <button className="btn-danger-text text-xs">Delete day</button>
+          </ConfirmForm>
+        )}
         <h1 className="text-2xl font-normal">{event.title} <span className="text-xs uppercase text-slate-400 font-normal">{event.kind}</span></h1>
         <p className="text-slate-600"><LocalTime iso={event.starts_at} />{event.ends_at && <> – <LocalTime iso={event.ends_at} mode="time" /></>}</p>
         {event.location_name && <p className="text-slate-600">📍 {event.location_name}</p>}
