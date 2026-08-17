@@ -10,7 +10,8 @@ import EventBatchForm from "@/components/event-batch-form";
 import RichEditor from "@/components/rich-editor";
 import RichText from "@/components/rich-text";
 
-type EventOpt = { id: string; title: string; kind: string; starts_at: string };
+type EventOpt = { id: string; title: string; kind: string; starts_at: string; group_id: string | null };
+type GroupOpt = { id: string; name: string };
 const TYPES: { value: QuestionType; label: string; icon: string }[] = [
   { value: "single_choice", label: "Multiple choice", icon: "◉" },
   { value: "multi_choice", label: "Checkboxes", icon: "☑" },
@@ -22,7 +23,7 @@ const TYPES: { value: QuestionType; label: string; icon: string }[] = [
 const uid = () => Math.random().toString(36).slice(2, 9);
 const toLocal = (iso: string | null) => (iso ? new Date(new Date(iso).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "");
 
-export default function FormEditor({ id, initial, events }: { id: string; initial: FormPayload; events: EventOpt[] }) {
+export default function FormEditor({ id, initial, events, groups }: { id: string; initial: FormPayload; events: EventOpt[]; groups: GroupOpt[] }) {
   const router = useRouter();
   const [f, setF] = useState<FormPayload>(initial);
   const [focus, setFocus] = useState<string | null>(null);
@@ -31,6 +32,12 @@ export default function FormEditor({ id, initial, events }: { id: string; initia
   const [pending, start] = useTransition();
   const set = <K extends keyof FormPayload>(k: K, v: FormPayload[K]) => setF((s) => ({ ...s, [k]: v }));
 
+  const addGroup = (gid: string) => {
+    if (!gid) return;
+    const ids = events.filter((e) => e.group_id === gid).map((e) => e.id).filter((eid) => !f.events.some((x) => x.event_id === eid));
+    set("events", [...f.events, ...ids.map((event_id) => ({ event_id, prompt: null }))]);
+    setMsg(`Added ${ids.length} day(s) from group`);
+  };
   const toggleEvent = (eid: string) => set("events", f.events.some((e) => e.event_id === eid) ? f.events.filter((e) => e.event_id !== eid) : [...f.events, { event_id: eid, prompt: null }]);
   const setPrompt = (eid: string, prompt: string) => set("events", f.events.map((e) => (e.event_id === eid ? { ...e, prompt: prompt || null } : e)));
   const addQ = () => { const q: FormQuestion = { id: uid(), type: "single_choice", label: "", required: true, options: ["Option 1"] }; set("questions", [...f.questions, q]); setFocus(q.id); };
@@ -76,7 +83,15 @@ export default function FormEditor({ id, initial, events }: { id: string; initia
       <div className="gf-card space-y-2">
         <div className="flex items-center justify-between">
           <div className="text-base">📅 Days / events on this form <span className="gf-required">*</span></div>
-          <button type="button" onClick={() => setAddingDays((v) => !v)} className="btn-text">{addingDays ? "Cancel" : "＋ Add practice days"}</button>
+          <div className="flex items-center gap-1">
+            {groups.length > 0 && (
+              <select value="" onChange={(e) => addGroup(e.target.value)} className="input w-auto py-1 text-xs">
+                <option value="">Add all days from a group…</option>
+                {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
+              </select>
+            )}
+            <button type="button" onClick={() => setAddingDays((v) => !v)} className="btn-text">{addingDays ? "Cancel" : "＋ Add practice days"}</button>
+          </div>
         </div>
         <p className="text-xs" style={{ color: "var(--g-grey-600)" }}>Each checked day gets its own “Will you be attending?” question (drive others / own ride / need a ride + pickup spot), so people can answer per day. Answers feed attendance, lineups and carpool.</p>
         {addingDays && (

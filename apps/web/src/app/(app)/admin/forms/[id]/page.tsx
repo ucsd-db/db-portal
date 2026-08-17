@@ -12,11 +12,12 @@ export default async function AdminFormEditPage({ params }: { params: Promise<{ 
   const { id } = await params;
   const { org } = await requireAdmin();
   const supabase = await createClient();
-  const [{ data: form }, { data: links }, { data: events }, { count }] = await Promise.all([
+  const [{ data: form }, { data: links }, { data: events }, { count }, { data: groups }] = await Promise.all([
     supabase.from("forms").select("*").eq("id", id).eq("org_id", org.id).maybeSingle(),
     supabase.from("form_events").select("*").eq("form_id", id).order("sort_order"),
-    supabase.from("events").select("id, title, kind, starts_at").eq("org_id", org.id).gte("starts_at", sinceIso()).order("starts_at"),
+    supabase.from("events").select("id, title, kind, starts_at, group_id").eq("org_id", org.id).gte("starts_at", sinceIso()).order("starts_at"),
     supabase.from("form_responses").select("*", { count: "exact", head: true }).eq("form_id", id),
+    supabase.from("event_groups").select("id, name").eq("org_id", org.id).order("created_at", { ascending: false }).limit(20),
   ]);
   if (!form) notFound();
   return (
@@ -26,6 +27,7 @@ export default async function AdminFormEditPage({ params }: { params: Promise<{ 
         id={id}
         initial={{ title: form.title, description: form.description, due_at: form.due_at, status: form.status, questions: (form.questions as unknown as FormQuestion[]) ?? [], events: (links ?? []).map((l) => ({ event_id: l.event_id, prompt: l.prompt })) }}
         events={events ?? []}
+        groups={(groups ?? []).filter((g) => (events ?? []).some((e) => e.group_id === g.id))}
       />
     </div>
   );
