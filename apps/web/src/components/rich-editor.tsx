@@ -2,6 +2,7 @@
 
 import { useEditor, EditorContent } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
+import Image from "@tiptap/extension-image";
 import { useEffect } from "react";
 
 /**
@@ -13,7 +14,7 @@ export default function RichEditor({ value, onChange, placeholder, minRows = 6, 
 }) {
   const editor = useEditor({
     immediatelyRender: false,
-    extensions: [StarterKit.configure({ heading: { levels: [2, 3] }, link: { openOnClick: false, autolink: true, defaultProtocol: "https" } })],
+    extensions: [StarterKit.configure({ heading: { levels: [2, 3] }, link: { openOnClick: false, autolink: true, defaultProtocol: "https" } }), Image.configure({ inline: false, allowBase64: false })],
     content: value,
     editorProps: { attributes: { class: "rich focus:outline-none px-3 py-2 text-sm", style: `min-height:${minRows * 1.5}rem` } },
     onUpdate: ({ editor }) => onChange(editor.isEmpty ? "" : editor.getHTML()),
@@ -32,6 +33,14 @@ export default function RichEditor({ value, onChange, placeholder, minRows = 6, 
     editor.chain().focus().extendMarkRange("link").setLink({ href: url.trim() }).run();
   };
 
+  const addImage = () => {
+    const url = window.prompt("Image URL (https://…)\nTip: right-click any image online → “Copy image address”. Discord, Imgur, Google Photos links all work.");
+    if (!url) return;
+    const u = url.trim();
+    if (!/^https:\/\//i.test(u)) { window.alert("Please use a link starting with https://"); return; }
+    editor.chain().focus().setImage({ src: u }).run();
+  };
+
   return (
     <div className={`rounded border bg-white ${className}`} style={{ borderColor: "var(--g-grey-300)" }}>
       <div className="flex flex-wrap items-center gap-0.5 border-b px-1 py-1" style={{ borderColor: "var(--g-grey-300)", background: "var(--g-grey-50)" }}>
@@ -47,6 +56,7 @@ export default function RichEditor({ value, onChange, placeholder, minRows = 6, 
         <B title="Divider" on={() => editor.chain().focus().setHorizontalRule().run()}>―</B>
         <span className="mx-1 h-5 w-px" style={{ background: "var(--g-grey-300)" }} />
         <B title="Link" active={editor.isActive("link")} on={setLink}>🔗</B>
+        <B title="Image from URL" on={addImage}>🖼</B>
         <B title="Clear formatting" on={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}>Tx</B>
         <span className="flex-1" />
         <span className="pr-2 text-[10px]" style={{ color: "var(--g-grey-600)" }}>Paste from Google Docs keeps formatting</span>
