@@ -33,7 +33,7 @@ export async function saveProfile(_: ProfileState, formData: FormData): Promise<
   const { error } = await supabase.from("profiles").update({
     full_name: String(formData.get("full_name") ?? "").trim(),
     phone: str(formData.get("phone")),
-    weight_kg: num(formData.get("weight_kg")),
+    weight_lb: num(formData.get("weight_lb")),
     gender: (str(formData.get("gender")) as "male" | "female" | "other" | null),
     side_preference: (str(formData.get("side_preference")) as "left" | "right" | "either" | null),
     can_steer: formData.get("can_steer") === "on",

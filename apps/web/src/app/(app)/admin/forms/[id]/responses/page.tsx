@@ -53,8 +53,8 @@ export default async function FormResponsesPage({ params }: { params: Promise<{ 
     return htmlToText(String(a));
   };
 
-  const header = ["Name", "Email", "Weight (kg)", "Phone", ...events.map((e) => e.title), ...questions.map((q) => q.label), "Submitted"];
-  const rows = responded.map((p) => [p.full_name, p.email, p.weight_kg ?? "", p.phone ?? "", ...events.map((e) => rideCell(rsvpBy.get(`${e.id}:${p.id}`))), ...questions.map((q) => ansCell(p.id, q)), fmtDateTime(respBy.get(p.id)!.submitted_at)]);
+  const header = ["Name", "Email", "Weight (lb)", "Phone", ...events.map((e) => e.title), ...questions.map((q) => q.label), "Submitted"];
+  const rows = responded.map((p) => [p.full_name, p.email, p.weight_lb ?? "", p.phone ?? "", ...events.map((e) => rideCell(rsvpBy.get(`${e.id}:${p.id}`))), ...questions.map((q) => ansCell(p.id, q)), fmtDateTime(respBy.get(p.id)!.submitted_at)]);
 
   return (
     <div className="gf-page -m-4 md:-m-6 min-h-full p-4 md:p-6">

@@ -11,7 +11,7 @@ export type Profile = {
   email: string;
   full_name: string;
   phone: string | null;
-  weight_kg: number | null;
+  weight_lb: number | null;
   gender: "male" | "female" | "other" | null;
   side_preference: "left" | "right" | "either" | null;
   can_steer: boolean;
@@ -156,7 +156,7 @@ export type Database = {
     Tables: {
       profiles: {
         Row: Row<Profile>;
-        Insert: Insert<Profile, "phone" | "weight_kg" | "gender" | "side_preference" | "can_steer" | "can_drum" | "address" | "lat" | "lon" | "can_drive" | "car_seats" | "created_at" | "updated_at" | "full_name">;
+        Insert: Insert<Profile, "phone" | "weight_lb" | "gender" | "side_preference" | "can_steer" | "can_drum" | "address" | "lat" | "lon" | "can_drive" | "car_seats" | "created_at" | "updated_at" | "full_name">;
         Update: Partial<Profile>;
         Relationships: [];
       };

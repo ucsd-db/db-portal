@@ -16,7 +16,7 @@ export default function ProfileForm({ profile: p }: { profile: Profile }) {
       <section className="card space-y-3">
         <h2 className="font-semibold">Paddling</h2>
         <div className="grid grid-cols-2 gap-3">
-          <div><label className="label">Weight (kg)</label><input name="weight_kg" type="number" step="0.1" min={30} max={200} defaultValue={p.weight_kg ?? ""} className="input" /></div>
+          <div><label className="label">Weight (lb)</label><input name="weight_lb" type="number" step="0.1" min={60} max={450} defaultValue={p.weight_lb ?? ""} className="input" /></div>
           <div><label className="label">Gender (for boat category)</label>
             <select name="gender" defaultValue={p.gender ?? ""} className="input"><option value="">—</option><option value="female">Female</option><option value="male">Male</option><option value="other">Other</option></select></div>
           <div><label className="label">Side preference</label>

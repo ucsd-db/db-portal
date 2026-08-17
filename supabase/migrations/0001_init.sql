@@ -10,7 +10,7 @@ create table public.profiles (
   full_name       text not null default '',
   phone           text,
   -- paddling attributes (used by lineup builder)
-  weight_kg       numeric(5,1),
+  weight_lb       numeric(5,1),
   gender          text check (gender in ('male','female','other')),
   side_preference text check (side_preference in ('left','right','either')),
   can_steer       boolean not null default false,

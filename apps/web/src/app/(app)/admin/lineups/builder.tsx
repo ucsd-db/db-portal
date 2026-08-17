@@ -49,7 +49,7 @@ export default function LineupBuilder({ roster, eventId, initial }: { roster: Ro
   const removeSelected = () => { if (sel?.kind === "seat") { setLineup(removePaddler(lineup, sel.seat)); setSel(null); } };
 
   const changeBoatType = (bt: BoatType) => { setLineup({ ...emptyLineup(bt), drummer: lineup.drummer, steer: lineup.steer }); setSel(null); };
-  const fill = () => { const r = autoFill(lineup, roster); setLineup(r.lineup); setMsg(r.unplaced.length ? `${r.unplaced.length} paddler(s) could not be placed` : null); };
+  const fill = () => { const r = autoFill(lineup, roster, { sidePreferenceTolerance: 20 /* lb */ }); setLineup(r.lineup); setMsg(r.unplaced.length ? `${r.unplaced.length} paddler(s) could not be placed` : null); };
   const clear = () => setLineup(emptyLineup(lineup.boatType));
 
   const save = (pub = published) => start(async () => {
@@ -84,8 +84,8 @@ export default function LineupBuilder({ roster, eventId, initial }: { roster: Ro
           <div className="mx-auto max-w-md space-y-1">
             <SeatBtn {...seatProps} seat={{ kind: "drummer" }} label="drummer" />
             <div className="grid grid-cols-[1fr_28px_1fr] gap-1 items-center">
-              <div className="text-center text-xs text-slate-500">Left · {sw.left.toFixed(0)} kg</div><div />
-              <div className="text-center text-xs text-slate-500">Right · {sw.right.toFixed(0)} kg</div>
+              <div className="text-center text-xs text-slate-500">Left · {sw.left.toFixed(0)} lb</div><div />
+              <div className="text-center text-xs text-slate-500">Right · {sw.right.toFixed(0)} lb</div>
               {Array.from({ length: ROWS }, (_, row) => (
                 <RowCells key={row} row={row} {...seatProps} />
               ))}
@@ -93,8 +93,8 @@ export default function LineupBuilder({ roster, eventId, initial }: { roster: Ro
             <SeatBtn {...seatProps} seat={{ kind: "steer" }} label="steer" />
           </div>
           <div className="mt-3 flex flex-wrap justify-center gap-4 text-xs text-slate-600">
-            <span>L−R: <b className={Math.abs(sw.diff) > 15 ? "text-red-600" : ""}>{sw.diff > 0 ? "+" : ""}{sw.diff.toFixed(0)} kg</b></span>
-            <span>Front−Back: <b>{fb.diff > 0 ? "+" : ""}{fb.diff.toFixed(0)} kg</b></span>
+            <span>L−R: <b className={Math.abs(sw.diff) > 30 ? "text-red-600" : ""}>{sw.diff > 0 ? "+" : ""}{sw.diff.toFixed(0)} lb</b></span>
+            <span>Front−Back: <b>{fb.diff > 0 ? "+" : ""}{fb.diff.toFixed(0)} lb</b></span>
             <span>Seated: {seated.size}/22</span>
           </div>
         </div>
@@ -110,7 +110,7 @@ export default function LineupBuilder({ roster, eventId, initial }: { roster: Ro
               <button type="button" onClick={() => clickBench(p.id)}
                 className={`w-full px-1 py-1.5 text-left flex justify-between rounded ${sel?.kind === "roster" && sel.id === p.id ? "bg-sky-100" : "hover:bg-slate-50"}`}>
                 <span className="truncate">{p.name}</span>
-                <span className="text-xs text-slate-500 shrink-0">{p.weight || "?"} kg{p.gender ? ` · ${p.gender[0].toUpperCase()}` : ""}{p.canSteer ? " · S" : ""}{p.canDrum ? " · D" : ""}</span>
+                <span className="text-xs text-slate-500 shrink-0">{p.weight || "?"} lb{p.gender ? ` · ${p.gender[0].toUpperCase()}` : ""}{p.canSteer ? " · S" : ""}{p.canDrum ? " · D" : ""}</span>
               </button>
             </li>
           ))}
@@ -131,7 +131,7 @@ function SeatBtn({ seat, label, lineup, roster, isSel, rosterSelected, onClick }
   return (
     <button type="button" onClick={() => onClick(seat)}
       className={`h-12 w-full rounded-md border px-1 text-xs leading-tight ${isSel(seat) ? "border-sky-600 bg-sky-100 ring-2 ring-sky-300" : pid ? "border-slate-300 bg-white hover:bg-slate-50" : "border-dashed border-slate-300 bg-slate-50 hover:bg-sky-50"} ${rosterSelected && !pid ? "border-sky-400" : ""}`}>
-      {pid ? (<><div className="font-medium truncate">{name}</div><div className="text-slate-500">{p?.weight ?? "?"} kg{p?.sidePreference && p.sidePreference !== "either" ? ` · ${p.sidePreference[0].toUpperCase()}` : ""}</div></>)
+      {pid ? (<><div className="font-medium truncate">{name}</div><div className="text-slate-500">{p?.weight ?? "?"} lb{p?.sidePreference && p.sidePreference !== "either" ? ` · ${p.sidePreference[0].toUpperCase()}` : ""}</div></>)
         : <span className="text-slate-400">{label ?? "empty"}</span>}
     </button>
   );
