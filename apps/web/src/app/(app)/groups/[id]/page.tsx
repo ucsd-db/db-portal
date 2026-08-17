@@ -101,7 +101,7 @@ export default async function GroupOverviewPage({ params }: { params: Promise<{ 
                 {isAdmin && (
                   <ConfirmForm action={deleteEvent} message={`Delete "${ev.title}" and its RSVPs, lineups and carpool? This can't be undone.`} className="absolute right-0 top-0">
                     <input type="hidden" name="id" value={ev.id} />
-                    <button className="btn-danger-text py-0.5 text-xs" title="Delete this day">✕ day</button>
+                    <button className="btn-danger-text py-0.5 text-xs" title="Delete this day">✕</button>
                   </ConfirmForm>
                 )}
                 <Link href={`/events/${ev.id}`} className="font-medium text-base hover:underline">{ev.title}</Link>
