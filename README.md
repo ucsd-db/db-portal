@@ -47,17 +47,18 @@ supabase/migrations/ SQL schema + RLS policies + RPCs
 
 1. Create a free Supabase project → SQL editor → run `supabase/migrations/0001_init.sql`.
    (Or `supabase link` + `supabase db push` if you install the CLI.)
-2. Auth → URL configuration: add `http://localhost:3000/auth/callback` and your Vercel URL `/auth/callback` to redirect URLs.
-   Auth → Providers → Email: keep "Confirm email" on (or turn off for faster local testing).
-3. `cp apps/web/.env.example apps/web/.env.local` and fill in the project URL + anon key.
+2. Auth → Providers → Email must be enabled. Sign-in is email-only (no passwords, no emails sent): the server mints
+   sessions with the service-role key. Admins can optionally set a password on their profile page.
+3. `cp apps/web/.env.example apps/web/.env.local` and fill in the project URL, anon key and **service-role key**
+   (Project Settings → API; server-only, never `NEXT_PUBLIC_`).
 4. `pnpm install && pnpm dev` → http://localhost:3000
-5. Sign up, then **Create a team** on the onboarding screen (you're admin). Share the join code (shown on the board) with paddlers.
+5. Enter your email, then **Create a team** on the onboarding screen (you're admin). Share the join code (shown on the board) with paddlers.
 
 `pnpm test` runs the algorithm package tests; `pnpm typecheck` / `pnpm lint` cover the app.
 
 ## Deploy (Vercel)
 
-Import the repo, set **Root Directory** to `apps/web`, add the two `NEXT_PUBLIC_SUPABASE_*` env vars. pnpm workspaces are detected automatically.
+Import the repo, set **Root Directory** to `apps/web`, add the two `NEXT_PUBLIC_SUPABASE_*` env vars and `SUPABASE_SERVICE_ROLE_KEY`. pnpm workspaces are detected automatically.
 
 ## Free-tier gotchas
 

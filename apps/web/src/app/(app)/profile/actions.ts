@@ -47,3 +47,15 @@ export async function saveProfile(_: ProfileState, formData: FormData): Promise<
   revalidatePath("/profile");
   return { saved: true, geocoded };
 }
+
+export type PasswordState = { error?: string; saved?: boolean };
+
+/** Admins may set a password; once set, signing in with their email will ask for it. */
+export async function setPassword(_: PasswordState, formData: FormData): Promise<PasswordState> {
+  const password = String(formData.get("password") ?? "");
+  if (password.length < 8) return { error: "Password must be at least 8 characters." };
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password });
+  if (error) return { error: error.message };
+  return { saved: true };
+}
