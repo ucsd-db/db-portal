@@ -143,6 +143,25 @@ export async function createEventsBatch(input: {
   return { groupId, ids: (data ?? []).sort((a, b) => (order.get(new Date(a.starts_at).toISOString()) ?? 0) - (order.get(new Date(b.starts_at).toISOString()) ?? 0)).map((d) => d.id) };
 }
 
+/** Edit one day from the group overview: title, times, location, RSVP deadline, notes. */
+export async function updateEventDay(input: {
+  id: string; title: string; starts_at: string; ends_at: string | null; rsvp_deadline: string | null;
+  location_name: string | null; location_lat: number | null; location_lon: number | null; notes: string | null;
+}): Promise<AdminState> {
+  const { org } = await requireAdmin();
+  const supabase = await createClient();
+  if (!input.title.trim()) return { error: "Title is required" };
+  const { data: ev, error } = await supabase.from("events").update({
+    title: input.title.trim(), starts_at: input.starts_at, ends_at: input.ends_at, rsvp_deadline: input.rsvp_deadline,
+    location_name: input.location_name, location_lat: input.location_lat, location_lon: input.location_lon,
+    notes: input.notes ? cleanHtml(input.notes) : null,
+  }).eq("id", input.id).eq("org_id", org.id).select("group_id").maybeSingle();
+  if (error) return { error: error.message };
+  revalidatePath("/events"); revalidatePath("/dashboard"); revalidatePath("/admin/events"); revalidatePath(`/events/${input.id}`);
+  if (ev?.group_id) revalidatePath(`/groups/${ev.group_id}`);
+  return { ok: true };
+}
+
 export async function renameGroup(fd: FormData) {
   const { org } = await requireAdmin();
   const supabase = await createClient();
