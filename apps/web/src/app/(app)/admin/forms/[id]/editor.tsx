@@ -23,7 +23,7 @@ const TYPES: { value: QuestionType; label: string; icon: string }[] = [
 const uid = () => Math.random().toString(36).slice(2, 9);
 const toLocal = (iso: string | null) => (iso ? new Date(new Date(iso).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "");
 
-export default function FormEditor({ id, initial, events, groups, joinCode }: { id: string; initial: FormPayload; events: EventOpt[]; groups: GroupOpt[]; joinCode: string }) {
+export default function FormEditor({ id, initial, events, groups }: { id: string; initial: FormPayload; events: EventOpt[]; groups: GroupOpt[] }) {
   const router = useRouter();
   const [f, setF] = useState<FormPayload>(initial);
   const [focus, setFocus] = useState<string | null>(null);
@@ -61,8 +61,6 @@ export default function FormEditor({ id, initial, events, groups, joinCode }: { 
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="chip" style={{ background: statusChip[1], color: statusChip[2], borderColor: "transparent" }}>{statusChip[0]}</span>
         <span className="flex-1" />
-        <button type="button" className="btn-text" title="Copy a link anyone can open — they just enter their email and are added to the team"
-          onClick={() => navigator.clipboard.writeText(`${location.origin}/forms/${id}?join=${joinCode}`).then(() => setMsg("Link copied — anyone with it just enters their email and is added to the team"))}>🔗 Copy link</button>
         <Link href={`/forms/${id}`} className="btn-text">👁 Preview</Link>
         <button type="button" onClick={() => save()} disabled={pending} className="btn-secondary">Save</button>
         {f.status !== "open" && <button type="button" onClick={() => save("open")} disabled={pending} className="btn-purple">Send</button>}

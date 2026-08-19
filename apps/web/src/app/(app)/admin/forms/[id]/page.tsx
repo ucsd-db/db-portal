@@ -22,13 +22,12 @@ export default async function AdminFormEditPage({ params }: { params: Promise<{ 
   if (!form) notFound();
   return (
     <div className="gf-page -m-4 md:-m-6 min-h-full p-4 md:p-6">
-      <FormTabs id={id} responses={count ?? 0} />
+      <FormTabs id={id} responses={count ?? 0} joinCode={org.join_code} />
       <FormEditor
         id={id}
         initial={{ title: form.title, description: form.description, due_at: form.due_at, status: form.status, questions: (form.questions as unknown as FormQuestion[]) ?? [], events: (links ?? []).map((l) => ({ event_id: l.event_id, prompt: l.prompt })) }}
         events={events ?? []}
         groups={(groups ?? []).filter((g) => (events ?? []).some((e) => e.group_id === g.id))}
-        joinCode={org.join_code}
       />
     </div>
   );

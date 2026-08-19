@@ -1,17 +1,20 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-/** Google Forms style "Questions | Responses" tab bar for the admin form editor. */
-export default function FormTabs({ id, responses }: { id: string; responses?: number }) {
+/** Google Forms style "Questions | Responses" tab bar for the admin form editor, with a share-link button pinned right. */
+export default function FormTabs({ id, responses, joinCode }: { id: string; responses?: number; joinCode: string }) {
   const path = usePathname();
+  const [copied, setCopied] = useState(false);
   const tabs = [
     { href: `/admin/forms/${id}`, label: "Questions" },
     { href: `/admin/forms/${id}/responses`, label: `Responses${responses != null ? ` ${responses}` : ""}` },
   ];
+  const copy = () => navigator.clipboard.writeText(`${location.origin}/forms/${id}?join=${joinCode}`).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2500); });
   return (
-    <div className="flex justify-center gap-2 border-b bg-white -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-4 px-4" style={{ borderColor: "var(--g-grey-300)" }}>
+    <div className="relative flex justify-center gap-2 border-b bg-white -mx-4 md:-mx-6 -mt-4 md:-mt-6 mb-4 px-4" style={{ borderColor: "var(--g-grey-300)" }}>
       {tabs.map((t) => {
         const active = path === t.href;
         return (
@@ -21,6 +24,10 @@ export default function FormTabs({ id, responses }: { id: string; responses?: nu
           </Link>
         );
       })}
+      <button type="button" onClick={copy} className="btn-text absolute right-2 md:right-4 top-1/2 -translate-y-1/2"
+        title="Copy a link anyone can open — they just enter their email and are added to the team">
+        {copied ? "✓ Link copied" : "🔗 Copy link"}
+      </button>
     </div>
   );
 }

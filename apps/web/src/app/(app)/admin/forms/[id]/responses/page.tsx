@@ -58,7 +58,7 @@ export default async function FormResponsesPage({ params }: { params: Promise<{ 
 
   return (
     <div className="gf-page -m-4 md:-m-6 min-h-full p-4 md:p-6">
-      <FormTabs id={id} responses={responded.length} />
+      <FormTabs id={id} responses={responded.length} joinCode={org.join_code} />
       <div className="mx-auto max-w-[1100px] space-y-3">
       <div className="gf-header flex flex-wrap items-center justify-between gap-2">
         <div>
