@@ -22,15 +22,18 @@ function ParagraphAnswer({ name, initial }: { name: string; initial: string }) {
   return (<><input type="hidden" name={name} value={v} /><RichEditor value={v} onChange={setV} minRows={3} placeholder="Your answer" /></>);
 }
 
-export default function FillForm({ formId, events, rsvpBy, questions, existingAnswers, pickups, defaultSeats, weightLb, submittedAt }: {
+export default function FillForm({ formId, events, rsvpBy, questions, existingAnswers, pickups, defaultSeats, weightLb, submittedAt, submitAction = submitForm, header }: {
   formId: string; events: { prompt: string | null; event: Event }[]; rsvpBy: Record<string, Rsvp>; questions: FormQuestion[];
   existingAnswers: Record<string, unknown> | null; pickups: PickupLocation[]; defaultSeats: number | null; weightLb: number | null; submittedAt: string | null;
+  /** Public (shared-link) forms submit through a different action and show an email/name block first. */
+  submitAction?: (state: SubmitState, fd: FormData) => Promise<SubmitState>; header?: React.ReactNode;
 }) {
-  const [state, action, pending] = useActionState<SubmitState, FormData>(submitForm, {});
+  const [state, action, pending] = useActionState<SubmitState, FormData>(submitAction, {});
   const a = (id: string) => existingAnswers?.[id];
   return (
     <form action={action} className="space-y-3">
       <input type="hidden" name="form_id" value={formId} />
+      {header}
 
       <Q title="🏆 What's your current weight? (lb)" help="Coaches need this to make lineups. Leave as-is if unchanged — saved to your profile.">
         <input name="weight_lb" type="number" step="0.1" min={60} max={450} defaultValue={weightLb ?? ""} placeholder="Your answer" className="input-line w-1/2" />

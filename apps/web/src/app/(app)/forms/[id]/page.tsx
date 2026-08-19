@@ -7,9 +7,9 @@ import type { Event, FormQuestion, Rsvp } from "@/lib/database.types";
 import FillForm from "./fill-form";
 import RichText from "@/components/rich-text";
 
-export default async function FormFillPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ join?: string }> }) {
+export default async function FormFillPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ join?: string; saved?: string }> }) {
   const { id } = await params;
-  const { join } = await searchParams;
+  const { join, saved } = await searchParams;
   const supabase = await createClient();
   // Shared links carry ?join=CODE: a signed-in user who isn't on the team yet is joined here (new sign-ins join in the login action).
   if (join && !(await getSession()).membership) {
@@ -35,6 +35,7 @@ export default async function FormFillPage({ params, searchParams }: { params: P
     <div className="gf-page -m-4 md:-m-6 min-h-full p-4 md:p-8">
       <div className="mx-auto max-w-[640px] space-y-3">
         {form.status === "draft" && isAdmin && <p className="rounded bg-white/70 p-2 text-xs text-center" style={{ color: "var(--g-grey-600)" }}>Preview — this form is a draft and hidden from members. <Link href={`/admin/forms/${id}`} className="underline">Back to editor</Link></p>}
+        {saved && <div className="gf-card text-sm">✅ Your response has been recorded — and this browser will remember you. Below is the full form in case you need to change anything.</div>}
         <div className="gf-header">
           <h1 className="text-[32px] leading-tight font-normal">{form.title}</h1>
           {form.description && <div className="mt-3" style={{ color: "var(--g-grey-900)" }}><RichText text={form.description} /></div>}
