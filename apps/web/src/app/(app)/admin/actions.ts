@@ -89,6 +89,30 @@ export async function deletePickupLocation(fd: FormData) {
   revalidatePath("/admin/settings");
 }
 
+export async function addSavedLocation(_: AdminState, fd: FormData): Promise<AdminState> {
+  const { org } = await requireAdmin();
+  const supabase = await createClient();
+  const name = String(fd.get("name") ?? "").trim();
+  if (!name) return { error: "Name is required" };
+  const lat = str(fd.get("lat")), lon = str(fd.get("lon"));
+  const { error } = await supabase.from("saved_locations").insert({
+    org_id: org.id, name,
+    address: str(fd.get("address")), city: str(fd.get("city")), zipcode: str(fd.get("zipcode")),
+    lat: lat ? Number(lat) : null, lon: lon ? Number(lon) : null,
+    sort_order: Number(fd.get("sort_order") ?? 0) || 0,
+  });
+  if (error) return { error: error.message.includes("duplicate") ? "A saved location with that name already exists." : error.message };
+  revalidatePath("/admin/settings");
+  return { ok: true };
+}
+
+export async function deleteSavedLocation(fd: FormData) {
+  await requireAdmin();
+  const supabase = await createClient();
+  await supabase.from("saved_locations").delete().eq("id", String(fd.get("id")));
+  revalidatePath("/admin/settings");
+}
+
 /** Create one event per entry (used by the "add practice days" widget). Returns created ids in input order. */
 export async function createEventsBatch(input: {
   kind: "practice" | "race" | "social" | "other";

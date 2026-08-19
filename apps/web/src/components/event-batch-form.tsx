@@ -1,11 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { createEventsBatch } from "@/app/(app)/admin/actions";
 import { combineLocal, dayLabel, formatTime, parseTimeText, shortDate } from "@/lib/time";
 import RichEditor from "@/components/rich-editor";
 import MultiDatePicker from "@/components/multi-date-picker";
+import { createClient } from "@/lib/supabase/client";
+import type { SavedLocation } from "@/lib/database.types";
 
 type Kind = "practice" | "race" | "social" | "other";
 const KIND_LABEL: Record<Kind, string> = { practice: "Practice", race: "Race", social: "Social", other: "Event" };
@@ -23,10 +25,21 @@ export default function EventBatchForm({ onCreated, compact = false, groupId = n
   const [end, setEnd] = useState("");
   const [deadline, setDeadline] = useState({ date: "", time: "11:59pm" });
   const [loc, setLoc] = useState({ name: "", lat: "", lon: "" });
+  const [saved, setSaved] = useState<SavedLocation[]>([]);
   const [notes, setNotes] = useState("");
   const [groupName, setGroupName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, run] = useTransition();
+
+  // Saved locations (Team settings) offered as suggestions.
+  useEffect(() => {
+    createClient().from("saved_locations").select("*").order("sort_order").order("name")
+      .then(({ data }) => setSaved(data ?? []));
+  }, []);
+  const pickSaved = (id: string) => {
+    const l = saved.find((x) => x.id === id);
+    if (l) setLoc({ name: l.name, lat: l.lat != null ? String(l.lat) : "", lon: l.lon != null ? String(l.lon) : "" });
+  };
 
   const startT = parseTimeText(start), endT = end ? parseTimeText(end) : null;
   const addNextWeekend = () => {
@@ -102,6 +115,13 @@ export default function EventBatchForm({ onCreated, compact = false, groupId = n
         <div className="mt-3 space-y-3">
           <div><label className="label">Day name suffix (days are named “Saturday 8/22”; add e.g. “Time trials” → “Saturday 8/22 · Time trials”)</label>
             <input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="(none)" className="input" /></div>
+          {saved.length > 0 && (
+            <div><label className="label">Location — pick a saved place (Team settings) or type one below</label>
+              <select value={saved.find((l) => l.name === loc.name)?.id ?? ""} onChange={(e) => pickSaved(e.target.value)} className="input">
+                <option value="">(custom / none)</option>
+                {saved.map((l) => <option key={l.id} value={l.id}>{l.name}{l.city ? ` — ${l.city}` : ""}</option>)}
+              </select></div>
+          )}
           <div className="grid grid-cols-[1fr_110px_110px] gap-2">
             <div><label className="label">Location name</label><input value={loc.name} onChange={(e) => setLoc({ ...loc, name: e.target.value })} placeholder="Fiesta Island (SDYAC)" className="input" /></div>
             <div><label className="label">Lat</label><input value={loc.lat} onChange={(e) => setLoc({ ...loc, lat: e.target.value })} className="input" /></div>
