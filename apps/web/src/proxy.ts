@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const PUBLIC_PATHS = ["/login", "/signup", "/auth"];
+const PUBLIC_PATHS = ["/login", "/auth"];
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -33,7 +33,7 @@ export async function proxy(request: NextRequest) {
     url.searchParams.set("next", pathname);
     return NextResponse.redirect(url);
   }
-  if (user && (pathname === "/login" || pathname === "/signup")) {
+  if (user && pathname === "/login") {
     return NextResponse.redirect(new URL("/dashboard", request.url));
   }
   return response;

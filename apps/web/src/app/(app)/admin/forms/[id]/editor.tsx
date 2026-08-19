@@ -61,6 +61,8 @@ export default function FormEditor({ id, initial, events, groups }: { id: string
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="chip" style={{ background: statusChip[1], color: statusChip[2], borderColor: "transparent" }}>{statusChip[0]}</span>
         <span className="flex-1" />
+        <button type="button" className="btn-text" title="Copy a link members can open — they just enter their email"
+          onClick={() => navigator.clipboard.writeText(`${location.origin}/forms/${id}`).then(() => setMsg("Link copied — share it anywhere; members just enter their email"))}>🔗 Copy link</button>
         <Link href={`/forms/${id}`} className="btn-text">👁 Preview</Link>
         <button type="button" onClick={() => save()} disabled={pending} className="btn-secondary">Save</button>
         {f.status !== "open" && <button type="button" onClick={() => save("open")} disabled={pending} className="btn-purple">Send</button>}

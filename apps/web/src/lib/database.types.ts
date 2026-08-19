@@ -309,6 +309,7 @@ export type Database = {
       is_org_admin: { Args: { org: string }; Returns: boolean };
       shares_org_with: { Args: { other: string }; Returns: boolean };
       admin_of_user: { Args: { other: string }; Returns: boolean };
+      user_has_password: { Args: { uid: string }; Returns: boolean };
       admin_add_member: {
         Args: { p_org: string; p_email: string; p_full_name?: string; p_address?: string | null; p_city?: string | null; p_zipcode?: string | null; p_lat?: number | null; p_lon?: number | null; p_car_passengers?: number | null; p_gender?: string | null; p_weight_lb?: number | null };
         Returns: string;
