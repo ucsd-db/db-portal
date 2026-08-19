@@ -7,6 +7,7 @@ import RichText from "@/components/rich-text";
 import FillForm from "@/app/(app)/forms/[id]/fill-form";
 import type { Event, FormQuestion } from "@/lib/database.types";
 import { submitPublicForm } from "./actions";
+import Icon from "@/components/icon";
 
 /**
  * Public (no sign-in) view of a form, reached via the shared link `/f/<id>?join=<TEAMCODE>`.
@@ -54,7 +55,7 @@ export default async function PublicFormPage({ params, searchParams }: { params:
           <h1 className="text-[32px] leading-tight font-normal">{form.title}</h1>
           {form.description && <div className="mt-3" style={{ color: "var(--g-grey-900)" }}><RichText text={form.description} /></div>}
           <div className="mt-4 pt-3 border-t text-sm flex flex-wrap gap-x-4 gap-y-1" style={{ borderColor: "var(--g-grey-300)" }}>
-            {form.due_at && <span className={overdue ? "font-medium" : ""} style={{ color: overdue ? "var(--g-red)" : "var(--g-grey-600)" }}>‼ Due <LocalTime iso={form.due_at} />{overdue && " — past due"}</span>}
+            {form.due_at && <span className={overdue ? "font-medium" : ""} style={{ color: overdue ? "var(--g-red)" : "var(--g-grey-600)" }}><Icon name="due" /> Due <LocalTime iso={form.due_at} />{overdue && " — past due"}</span>}
             <span style={grey}>{org.name}</span>
             <Link href={`/login?next=${encodeURIComponent(`/forms/${id}?join=${org.join_code}`)}`} className="underline" style={grey}>Sign in instead</Link>
             <span className="gf-required">* Indicates required question</span>

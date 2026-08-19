@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/session";
+import Icon from "@/components/icon";
 import { createClient } from "@/lib/supabase/server";
 import LocalTime from "@/components/local-time";
 import { deleteAnnouncement, togglePin } from "../actions";
@@ -21,7 +22,7 @@ export default async function AdminAnnouncementsPage() {
           {items?.map((a) => (
             <li key={a.id} className="card text-sm">
               <div className="flex justify-between gap-2">
-                <div className="font-medium">{a.pinned && "📌 "}{a.title}</div>
+                <div className="font-medium">{a.pinned && <><Icon name="board" /> </>}{a.title}</div>
                 <div className="flex gap-2 shrink-0">
                   <form action={togglePin}><input type="hidden" name="id" value={a.id} /><input type="hidden" name="pinned" value={String(!a.pinned)} />
                     <button className="text-xs underline">{a.pinned ? "Unpin" : "Pin"}</button></form>

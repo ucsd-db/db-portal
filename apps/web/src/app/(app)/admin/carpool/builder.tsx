@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useTransition } from "react";
+import Icon from "@/components/icon";
 import dynamic from "next/dynamic";
 import { assignCarpool, buildOsrmRouteUrl, carRoutePoints, parseOsrmRoute, type Car, type Destination, type Mode, type OsrmRoute, type Rider } from "@db/carpool";
 import { saveCarpool } from "./actions";
@@ -107,7 +108,7 @@ export default function CarpoolBuilder({ eventId, destination, riders, drivers, 
             return (
               <div key={c.id} onClick={() => clickCar(c.id)} className={`card p-3 text-sm cursor-pointer ${sel ? "hover:border-sky-400" : ""}`} style={{ borderLeft: `4px solid ${COLORS[i % COLORS.length]}` }}>
                 <div className="flex justify-between items-center gap-2">
-                  <div className="font-medium">🚗 {riders[c.driverId]?.name}{!riders[c.driverId]?.location && <span className="text-xs text-amber-600 ml-1">(no address)</span>}</div>
+                  <div className="font-medium"><Icon name="car" /> {riders[c.driverId]?.name}{!riders[c.driverId]?.location && <span className="text-xs text-amber-600 ml-1">(no address)</span>}</div>
                   <div className="flex items-center gap-2 text-xs">
                     <label onClick={(e) => e.stopPropagation()}>cap <input type="number" min={1} max={15} value={c.capacity} onChange={(e) => setCap(c.id, Number(e.target.value))} className="input w-14 py-0.5 inline" /></label>
                     <button type="button" onClick={(e) => { e.stopPropagation(); toggleLock(c.id); }} title="Lock: optimizer won't change this car">{c.locked ? "🔒" : "🔓"}</button>

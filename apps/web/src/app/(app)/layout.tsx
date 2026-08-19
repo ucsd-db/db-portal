@@ -1,6 +1,7 @@
 import { getSession } from "@/lib/session";
 import { signOut } from "@/app/(auth)/actions";
 import NavRail from "@/components/nav-rail";
+import Icon from "@/components/icon";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { profile, membership, isAdmin } = await getSession();
@@ -10,7 +11,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       {/* Top app bar */}
       <header className="sticky top-0 z-20 flex h-16 items-center gap-4 border-b bg-white px-4" style={{ borderColor: "var(--g-grey-300)" }}>
         <div className="flex items-center gap-2 min-w-0">
-          <span className="text-2xl">🐉</span>
+          <span className="text-2xl" style={{ color: "var(--g-green)" }}><Icon name="dragon" /></span>
           <span className="truncate text-[22px] leading-none" style={{ color: "var(--g-grey-600)" }}>
             <span className="font-medium" style={{ color: "var(--g-grey-900)" }}>{membership?.organization.name ?? "Team"}</span> Portal
           </span>

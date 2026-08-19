@@ -2,30 +2,31 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Icon, { type IconName } from "@/components/icon";
 
-const memberNav = [
-  { href: "/dashboard", label: "Board", icon: "📌" },
-  { href: "/forms", label: "Forms", icon: "📝" },
-  { href: "/events", label: "Events", icon: "📅" },
-  { href: "/profile", label: "My profile", icon: "👤" },
+const memberNav: { href: string; label: string; icon: IconName }[] = [
+  { href: "/dashboard", label: "Board", icon: "board" },
+  { href: "/forms", label: "Forms", icon: "form" },
+  { href: "/events", label: "Events", icon: "calendar" },
+  { href: "/profile", label: "My profile", icon: "user" },
 ];
-const adminNav = [
-  { href: "/admin/announcements", label: "Announcements", icon: "📣" },
-  { href: "/admin/forms", label: "Forms", icon: "🧾" },
-  { href: "/admin/events", label: "Events", icon: "🗓️" },
-  { href: "/admin/members", label: "Members", icon: "👥" },
-  { href: "/admin/lineups", label: "Lineups", icon: "🛶" },
-  { href: "/admin/carpool", label: "Carpool", icon: "🚗" },
-  { href: "/admin/settings", label: "Settings", icon: "⚙️" },
+const adminNav: { href: string; label: string; icon: IconName }[] = [
+  { href: "/admin/announcements", label: "Announcements", icon: "announce" },
+  { href: "/admin/forms", label: "Forms", icon: "file" },
+  { href: "/admin/events", label: "Events", icon: "calendar" },
+  { href: "/admin/members", label: "Members", icon: "users" },
+  { href: "/admin/lineups", label: "Lineups", icon: "boat" },
+  { href: "/admin/carpool", label: "Carpool", icon: "car" },
+  { href: "/admin/settings", label: "Settings", icon: "gear" },
 ];
 
 export default function NavRail({ isAdmin }: { isAdmin: boolean }) {
   const path = usePathname();
-  const item = (n: { href: string; label: string; icon: string }) => {
+  const item = (n: { href: string; label: string; icon: IconName }) => {
     const active = path === n.href || path.startsWith(n.href + "/");
     return (
       <Link key={n.href} href={n.href} className={`nav-item ${active ? "nav-item-active" : ""}`}>
-        <span className="w-5 text-center">{n.icon}</span><span className="hidden md:inline">{n.label}</span>
+        <span className="w-5 text-center"><Icon name={n.icon} /></span><span className="hidden md:inline">{n.label}</span>
       </Link>
     );
   };

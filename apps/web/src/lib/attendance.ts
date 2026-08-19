@@ -4,10 +4,10 @@ import type { RideChoice, Rsvp } from "@/lib/database.types";
 export type AttendanceChoice = "yes_driver" | "yes_self" | "yes_needs_ride" | "maybe" | "no";
 
 export const ATTENDANCE_OPTIONS: { value: AttendanceChoice; label: string }[] = [
-  { value: "yes_driver", label: "Yes, and I can drive others 👑" },
+  { value: "yes_driver", label: "Yes, and I can drive others" },
   { value: "yes_self", label: "Yes, and I'll get there myself (not driving others) 🫥" },
-  { value: "yes_needs_ride", label: "Yes, and I need a ride 🐉" },
-  { value: "maybe", label: "Maybe 🤔" },
+  { value: "yes_needs_ride", label: "Yes, and I need a ride" },
+  { value: "maybe", label: "Maybe" },
   { value: "no", label: "No 🤡" },
 ];
 

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Icon from "@/components/icon";
 import { requireOrg } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import LocalTime from "@/components/local-time";
@@ -25,7 +26,7 @@ export default async function DashboardPage() {
         </div>
         {pendingForms.length > 0 && (
           <div className="mb-4 rounded-lg border p-4 text-sm" style={{ borderColor: "#fde293", background: "#fef7e0" }}>
-            <div className="font-semibold text-amber-800">📝 You have {pendingForms.length} form{pendingForms.length > 1 ? "s" : ""} to fill out</div>
+            <div className="font-semibold text-amber-800"><Icon name="form" /> You have {pendingForms.length} form{pendingForms.length > 1 ? "s" : ""} to fill out</div>
             <ul className="mt-1 space-y-0.5">
               {pendingForms.map((f) => <li key={f.id}><Link href={`/forms/${f.id}`} className="underline">{f.title}</Link>{f.due_at && <span className="text-amber-700"> · due <LocalTime iso={f.due_at} /></span>}</li>)}
             </ul>
@@ -36,7 +37,7 @@ export default async function DashboardPage() {
           {announcements?.map((a) => (
             <article key={a.id} className="card">
               <div className="flex items-baseline justify-between gap-2">
-                <h2 className="font-semibold">{a.pinned && "📌 "}{a.title}</h2>
+                <h2 className="font-semibold">{a.pinned && <><Icon name="board" /> </>}{a.title}</h2>
                 <span className="text-xs text-slate-400 whitespace-nowrap"><LocalTime iso={a.created_at} /></span>
               </div>
               <RichText text={a.body} className="mt-1 text-slate-700" />

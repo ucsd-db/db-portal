@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Icon from "@/components/icon";
 import { saveProfile, type ProfileState } from "./actions";
 import type { Profile } from "@/lib/database.types";
 
@@ -35,7 +36,7 @@ export default function ProfileForm({ profile: p }: { profile: Profile }) {
             <input name="city" defaultValue={p.city ?? ""} placeholder="City" className="input" />
             <input name="zipcode" defaultValue={p.zipcode ?? ""} placeholder="Zipcode" className="input" />
           </div>
-          <p className="text-xs text-slate-500 mt-1">{p.lat ? `📍 Located (${p.lat.toFixed(3)}, ${p.lon?.toFixed(3)})` : "Not located yet"}</p></div>
+          <p className="text-xs text-slate-500 mt-1">{p.lat ? <><Icon name="pin" /> Located ({p.lat.toFixed(3)}, {p.lon?.toFixed(3)})</> : "Not located yet"}</p></div>
         <div className="text-sm">
           <label className="label">How many passengers can you drive? (not counting you — 0 if you don’t have a car)</label>
           <input name="car_passengers" type="number" min={0} max={14} defaultValue={p.car_passengers} className="input w-24" />

@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Icon from "@/components/icon";
 import Link from "next/link";
 import { requireOrg } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
@@ -46,7 +47,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
         )}
         <h1 className="text-2xl font-normal">{event.title} <span className="text-xs uppercase text-slate-400 font-normal">{event.kind}</span></h1>
         <p className="text-slate-600"><LocalTime iso={event.starts_at} />{event.ends_at && <> – <LocalTime iso={event.ends_at} mode="time" /></>}</p>
-        {event.location_name && <p className="text-slate-600">📍 {event.location_name}</p>}
+        {event.location_name && <p className="text-slate-600"><Icon name="pin" /> {event.location_name}</p>}
         {event.notes && <RichText text={event.notes} className="mt-3" />}
         {event.rsvp_deadline && <p className="mt-2 text-xs text-slate-500">RSVP by <LocalTime iso={event.rsvp_deadline} />{closed && " (closed)"}</p>}
         {!!lineups?.length && (
@@ -63,7 +64,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
             <div className="grid gap-3 sm:grid-cols-2">
               {cars.map((c) => (
                 <div key={c.id} className="card text-sm">
-                  <div className="font-medium">🚗 {names[c.driverId] ?? "?"}</div>
+                  <div className="font-medium"><Icon name="car" /> {names[c.driverId] ?? "?"}</div>
                   <ol className="ml-4 list-decimal text-xs mt-1">{c.passengerIds.map((p) => <li key={p}>{names[p] ?? "?"}</li>)}</ol>
                   {!c.passengerIds.length && <div className="text-xs text-slate-400">no passengers</div>}
                 </div>
@@ -85,9 +86,9 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
                 <li key={r.user_id} className="flex justify-between gap-2">
                   <span>{r.profile?.full_name || "Member"}</span>
                   <span className="text-xs text-slate-500">
-                    {r.ride === "driver" && `🚗 ${r.seats ?? "?"} seats`}
+                    {r.ride === "driver" && <><Icon name="car" /> {r.seats ?? "?"} seats</>}
                     {r.ride === "self" && "🫥 own ride"}
-                    {r.ride === "needs_ride" && "🙋 needs ride"}
+                    {r.ride === "needs_ride" && <><Icon name="hand" /> needs ride</>}
                   </span>
                 </li>
               ))}

@@ -6,6 +6,7 @@ import { updateEventDay } from "@/app/(app)/admin/actions";
 import { combineLocal, formatTime, parseTimeText } from "@/lib/time";
 import RichEditor from "@/components/rich-editor";
 import type { Event, SavedLocation } from "@/lib/database.types";
+import Icon from "@/components/icon";
 
 const localDate = (iso: string) => new Date(iso).toLocaleDateString("sv");
 const localTime = (iso: string) => { const d = new Date(iso); return formatTime(d.getHours(), d.getMinutes()); };
@@ -45,10 +46,10 @@ export default function EditDay({ event, saved }: { event: Event; saved: SavedLo
     });
   };
 
-  if (!open) return <button onClick={() => setOpen(true)} className="btn-text py-0.5 text-xs" title="Edit this day">✎</button>;
+  if (!open) return <button onClick={() => setOpen(true)} className="btn-text py-0.5 text-xs" title="Edit this day"><Icon name="pen" /></button>;
   return (
     <>
-      <button onClick={() => setOpen(false)} className="btn-text py-0.5 text-xs" title="Close">✎</button>
+      <button onClick={() => setOpen(false)} className="btn-text py-0.5 text-xs" title="Close"><Icon name="pen" /></button>
       <div className="absolute right-0 top-6 z-10 w-[26rem] max-w-[85vw] space-y-2 rounded-lg border bg-white p-3 text-left text-sm font-normal shadow-lg" style={{ borderColor: "var(--g-grey-300)" }}>
         <div><label className="label">Day name</label><input value={title} onChange={(e) => setTitle(e.target.value)} className="input" /></div>
         <div className="grid grid-cols-[1fr_90px_90px] gap-2">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import Icon from "@/components/icon";
 import { addMember, importMembers, updateMember, type AdminState } from "../actions";
 import type { Profile } from "@/lib/database.types";
 
@@ -59,9 +60,9 @@ export function MemberRow({ index, profile: p, role, isSelf, roleForm, removeFor
         <td className="text-center" style={{ background: "var(--g-grey-100)", color: "var(--g-grey-600)" }}>{index}</td>
         <td className="font-medium whitespace-nowrap">{p.full_name || "—"}{isSelf && " (you)"}</td><td>{p.email}</td><td className="max-w-[220px]">{p.address ?? "—"}</td>
         <td>{p.lat ?? "—"}</td><td>{p.lon ?? "—"}</td><td>{p.city ?? "—"}</td><td>{p.zipcode ?? "—"}</td>
-        <td>{p.car_passengers > 0 ? `🚗 ${p.car_passengers}` : "0"}</td><td className="capitalize">{p.gender ?? "—"}</td><td>{p.weight_lb ?? "—"}</td>
+        <td>{p.car_passengers > 0 ? <><Icon name="car" /> {p.car_passengers}</> : "0"}</td><td className="capitalize">{p.gender ?? "—"}</td><td>{p.weight_lb ?? "—"}</td>
         <td>{roleForm}</td>
-        <td className="whitespace-nowrap"><button type="button" onClick={() => setEdit(true)} className="btn-text py-0.5 text-xs" title="Edit">✎</button>{removeForm}</td>
+        <td className="whitespace-nowrap"><button type="button" onClick={() => setEdit(true)} className="btn-text py-0.5 text-xs" title="Edit"><Icon name="pen" /></button>{removeForm}</td>
       </tr>
     );
   }

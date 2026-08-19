@@ -1,6 +1,7 @@
 "use client";
 
 import { useEditor, EditorContent } from "@tiptap/react";
+import Icon from "@/components/icon";
 import StarterKit from "@tiptap/starter-kit";
 import Image from "@tiptap/extension-image";
 import { useEffect } from "react";
@@ -55,7 +56,7 @@ export default function RichEditor({ value, onChange, placeholder, minRows = 6, 
         <B title="Quote" active={editor.isActive("blockquote")} on={() => editor.chain().focus().toggleBlockquote().run()}>❝</B>
         <B title="Divider" on={() => editor.chain().focus().setHorizontalRule().run()}>―</B>
         <span className="mx-1 h-5 w-px" style={{ background: "var(--g-grey-300)" }} />
-        <B title="Link" active={editor.isActive("link")} on={setLink}>🔗</B>
+        <B title="Link" active={editor.isActive("link")} on={setLink}><Icon name="link" /></B>
         <B title="Image from URL" on={addImage}>🖼</B>
         <B title="Clear formatting" on={() => editor.chain().focus().unsetAllMarks().clearNodes().run()}>Tx</B>
       </div>
