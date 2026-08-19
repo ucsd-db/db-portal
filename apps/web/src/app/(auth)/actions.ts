@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAccount, lookupEmail, normalizeEmail, startSession } from "@/lib/email-signin";
 
-export type AuthState = { error?: string; step?: "password" | "name" };
+export type AuthState = { error?: string; step?: "password" | "name"; email?: string };
 
 /**
  * Email-only sign-in. Type your email and you're in — no password, no confirmation email.
@@ -22,16 +22,16 @@ export async function signIn(_: AuthState, formData: FormData): Promise<AuthStat
   if (found.userId) {
     if (found.adminWithPassword) {
       const password = String(formData.get("password") ?? "");
-      if (!password) return { step: "password" };
+      if (!password) return { step: "password", email };
       const supabase = await createClient();
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) return { step: "password", error: "Wrong password." };
+      if (error) return { step: "password", email, error: "Wrong password." };
       await joinFromLink(next);
       redirect(next);
     }
   } else {
     const fullName = found.pendingName || String(formData.get("full_name") ?? "").trim();
-    if (!fullName) return { step: "name" };
+    if (!fullName) return { step: "name", email };
     const { error } = await createAccount(email, fullName);
     if (error) return { error };
   }
