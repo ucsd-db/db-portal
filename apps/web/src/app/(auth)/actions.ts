@@ -11,6 +11,7 @@ export type AuthState = { error?: string; step?: "password" | "name" };
  *  - Existing account → signed in. Admins who have set a password are asked for it.
  *  - Email on an admin's roster (pending_members) → account created and linked to the team.
  *  - Unknown email → asked for a name, account created, sent to onboarding (join code).
+ *  - If the destination carries `?join=CODE` (shared form links), the user is joined to that team first.
  * Sessions are minted server-side with the service role (generateLink + verifyOtp), so nothing is emailed.
  */
 export async function signIn(_: AuthState, formData: FormData): Promise<AuthState> {
@@ -31,6 +32,7 @@ export async function signIn(_: AuthState, formData: FormData): Promise<AuthStat
       const supabase = await createClient();
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) return { step: "password", error: "Wrong password." };
+      await joinFromLink(next);
       redirect(next);
     }
     return startSession(email, next);
@@ -55,7 +57,16 @@ async function startSession(email: string, next: string): Promise<AuthState> {
   const supabase = await createClient();
   const { error: verifyError } = await supabase.auth.verifyOtp({ token_hash: data.properties.hashed_token, type: "magiclink" });
   if (verifyError) return { error: verifyError.message };
+  await joinFromLink(next);
   redirect(next);
+}
+
+/** Shared form links carry ?join=CODE so newcomers land on the team without the onboarding step. */
+async function joinFromLink(next: string) {
+  const code = new URL(next, "http://x").searchParams.get("join");
+  if (!code) return;
+  const supabase = await createClient();
+  await supabase.rpc("join_organization", { code }); // no-op if already a member; invalid codes just fall through to onboarding
 }
 
 export async function signOut() {

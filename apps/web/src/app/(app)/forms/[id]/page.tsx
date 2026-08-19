@@ -1,16 +1,22 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
-import { requireOrg } from "@/lib/session";
+import { getSession, requireOrg } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import LocalTime from "@/components/local-time";
 import type { Event, FormQuestion, Rsvp } from "@/lib/database.types";
 import FillForm from "./fill-form";
 import RichText from "@/components/rich-text";
 
-export default async function FormFillPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function FormFillPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ join?: string }> }) {
   const { id } = await params;
-  const { org, userId, profile, isAdmin } = await requireOrg();
+  const { join } = await searchParams;
   const supabase = await createClient();
+  // Shared links carry ?join=CODE: a signed-in user who isn't on the team yet is joined here (new sign-ins join in the login action).
+  if (join && !(await getSession()).membership) {
+    await supabase.rpc("join_organization", { code: join });
+    redirect(`/forms/${id}`);
+  }
+  const { org, userId, profile, isAdmin } = await requireOrg();
   const [{ data: form }, { data: links }, { data: response }, { data: pickups }] = await Promise.all([
     supabase.from("forms").select("*").eq("id", id).eq("org_id", org.id).maybeSingle(),
     supabase.from("form_events").select("*, event:events(*)").eq("form_id", id).order("sort_order"),

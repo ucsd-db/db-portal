@@ -28,6 +28,7 @@ export default async function AdminFormEditPage({ params }: { params: Promise<{ 
         initial={{ title: form.title, description: form.description, due_at: form.due_at, status: form.status, questions: (form.questions as unknown as FormQuestion[]) ?? [], events: (links ?? []).map((l) => ({ event_id: l.event_id, prompt: l.prompt })) }}
         events={events ?? []}
         groups={(groups ?? []).filter((g) => (events ?? []).some((e) => e.group_id === g.id))}
+        joinCode={org.join_code}
       />
     </div>
   );
