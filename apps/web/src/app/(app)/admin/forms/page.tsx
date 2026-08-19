@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Icon from "@/components/icon";
 import { requireAdmin } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import LocalTime from "@/components/local-time";
@@ -20,7 +21,7 @@ export default async function AdminFormsPage() {
         <div className="flex gap-4">
           <form action={createForm}>
             <button className="card card-hover flex h-32 w-40 flex-col items-center justify-center gap-2 !p-0" style={{ background: "#fff" }}>
-              <span className="text-4xl" style={{ color: "var(--g-purple)" }}>＋</span>
+              <span className="text-4xl" style={{ color: "var(--g-purple)" }}><Icon name="plus" /></span>
               <span className="text-xs">Blank form</span>
             </button>
           </form>

@@ -7,6 +7,7 @@ import { submitForm, type SubmitState } from "./actions";
 import AttendanceFields from "@/components/attendance-fields";
 import LocalTime from "@/components/local-time";
 import type { Event, FormQuestion, PickupLocation, Rsvp } from "@/lib/database.types";
+import Icon from "@/components/icon";
 
 const Q = ({ title, required, help, meta, children }: { title: React.ReactNode; required?: boolean; help?: string; meta?: React.ReactNode; children: React.ReactNode }) => (
   <div className="gf-card space-y-3">
@@ -35,13 +36,13 @@ export default function FillForm({ formId, events, rsvpBy, questions, existingAn
       <input type="hidden" name="form_id" value={formId} />
       {header}
 
-      <Q title="🏆 What's your current weight? (lb)" help="Coaches need this to make lineups. Leave as-is if unchanged — saved to your profile.">
+      <Q title={<><Icon name="weight" /> What&apos;s your current weight? (lb)</>} help="Coaches need this to make lineups. Leave as-is if unchanged — saved to your profile.">
         <input name="weight_lb" type="number" step="0.1" min={60} max={450} defaultValue={weightLb ?? ""} placeholder="Your answer" className="input-line w-1/2" />
       </Q>
 
       {events.map(({ event, prompt }, i) => (
-        <Q key={event.id} required title={prompt || `${i % 2 ? "🌚" : "🌝"} Will you be attending ${event.title}?`}
-          meta={<><LocalTime iso={event.starts_at} />{event.location_name ? ` · 📍 ${event.location_name}` : ""}</>} help={event.notes ?? undefined}>
+        <Q key={event.id} required title={prompt || <><Icon name={i % 2 ? "moon" : "sun"} /> Will you be attending {event.title}?</>}
+          meta={<><LocalTime iso={event.starts_at} />{event.location_name && <> · <Icon name="pin" /> {event.location_name}</>}</>} help={event.notes ?? undefined}>
           <AttendanceFields prefix={`ev_${event.id}_`} existing={rsvpBy[event.id] ?? null} pickups={pickups} defaultSeats={defaultSeats} />
         </Q>
       ))}
@@ -64,7 +65,7 @@ export default function FillForm({ formId, events, rsvpBy, questions, existingAn
       ))}
 
       {state.error && <p className="text-sm" style={{ color: "var(--g-red)" }}>{state.error}</p>}
-      {state.saved && <div className="gf-card text-sm">✅ Your response has been recorded. You can resubmit any time before the form closes — the latest one counts.</div>}
+      {state.saved && <div className="gf-card text-sm"><Icon name="yes" /> Your response has been recorded. You can resubmit any time before the form closes — the latest one counts.</div>}
       <div className="flex items-center justify-between pt-1">
         <button disabled={pending} className="btn-purple">{pending ? "Submitting…" : submittedAt ? "Update response" : "Submit"}</button>
         {submittedAt && !state.saved && <span className="text-xs" style={{ color: "var(--g-grey-600)" }}>Last submitted <LocalTime iso={submittedAt} /></span>}

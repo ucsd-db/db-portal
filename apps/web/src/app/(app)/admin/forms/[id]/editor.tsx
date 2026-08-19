@@ -7,6 +7,7 @@ import type { FormQuestion, QuestionType } from "@/lib/database.types";
 import LocalTime from "@/components/local-time";
 import { deleteForm, saveForm, type FormPayload } from "../actions";
 import EventBatchForm from "@/components/event-batch-form";
+import Icon from "@/components/icon";
 import RichEditor from "@/components/rich-editor";
 import RichText from "@/components/rich-text";
 
@@ -61,7 +62,7 @@ export default function FormEditor({ id, initial, events, groups }: { id: string
       <div className="flex flex-wrap items-center gap-2 text-sm">
         <span className="chip" style={{ background: statusChip[1], color: statusChip[2], borderColor: "transparent" }}>{statusChip[0]}</span>
         <span className="flex-1" />
-        <Link href={`/forms/${id}`} className="btn-text">👁 Preview</Link>
+        <Link href={`/forms/${id}`} className="btn-text"><Icon name="eye" /> Preview</Link>
         <button type="button" onClick={() => save()} disabled={pending} className="btn-secondary">Save</button>
         {f.status !== "open" && <button type="button" onClick={() => save("open")} disabled={pending} className="btn-purple">Send</button>}
         {f.status === "open" && <button type="button" onClick={() => save("closed")} disabled={pending} className="btn-secondary">Stop accepting responses</button>}
@@ -82,7 +83,7 @@ export default function FormEditor({ id, initial, events, groups }: { id: string
       {/* events card */}
       <div className="gf-card space-y-2">
         <div className="flex items-center justify-between">
-          <div className="text-base">📅 Days / events on this form <span className="gf-required">*</span></div>
+          <div className="text-base"><Icon name="calendar" /> Days / events on this form <span className="gf-required">*</span></div>
           <div className="flex items-center gap-1">
             {groups.length > 0 && (
               <select value="" onChange={(e) => addGroup(e.target.value)} className="input w-auto py-1 text-xs">
@@ -90,7 +91,7 @@ export default function FormEditor({ id, initial, events, groups }: { id: string
                 {groups.map((g) => <option key={g.id} value={g.id}>{g.name}</option>)}
               </select>
             )}
-            <button type="button" onClick={() => setAddingDays((v) => !v)} className="btn-text">{addingDays ? "Cancel" : "＋ New event & days"}</button>
+            <button type="button" onClick={() => setAddingDays((v) => !v)} className="btn-text">{addingDays ? "Cancel" : <><Icon name="plus" /> New event & days</>}</button>
           </div>
         </div>
         <p className="text-xs" style={{ color: "var(--g-grey-600)" }}>Each checked day gets its own “Will you be attending?” question (drive others / own ride / need a ride + pickup spot), so people can answer per day. Answers feed attendance, lineups and carpool.</p>
@@ -149,10 +150,10 @@ export default function FormEditor({ id, initial, events, groups }: { id: string
 
             {active && (
               <div className="flex items-center gap-1 border-t pt-2 text-sm" style={{ borderColor: "var(--g-grey-300)" }}>
-                <button type="button" onClick={() => moveQ(i, -1)} disabled={i === 0} className="btn-text disabled:opacity-30">↑</button>
-                <button type="button" onClick={() => moveQ(i, 1)} disabled={i === f.questions.length - 1} className="btn-text disabled:opacity-30">↓</button>
-                <button type="button" onClick={() => dupQ(q.id)} className="btn-text" title="Duplicate">⧉</button>
-                <button type="button" onClick={() => delQ(q.id)} className="btn-text" title="Delete">🗑</button>
+                <button type="button" onClick={() => moveQ(i, -1)} disabled={i === 0} className="btn-text disabled:opacity-30"><Icon name="up" /></button>
+                <button type="button" onClick={() => moveQ(i, 1)} disabled={i === f.questions.length - 1} className="btn-text disabled:opacity-30"><Icon name="down" /></button>
+                <button type="button" onClick={() => dupQ(q.id)} className="btn-text" title="Duplicate"><Icon name="clone" /></button>
+                <button type="button" onClick={() => delQ(q.id)} className="btn-text" title="Delete"><Icon name="trash" /></button>
                 <span className="flex-1" />
                 <label className="flex items-center gap-2 text-xs"><span>Required</span><input type="checkbox" checked={!!q.required} onChange={(e) => updQ(q.id, { required: e.target.checked })} className="accent-[var(--g-purple)] w-4 h-4" /></label>
               </div>

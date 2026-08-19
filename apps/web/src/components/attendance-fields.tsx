@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import { ATTENDANCE_OPTIONS, toChoice, type AttendanceChoice } from "@/lib/attendance";
+import Icon, { type IconName } from "@/components/icon";
+
+const OPTION_ICONS: Partial<Record<AttendanceChoice, IconName>> = { yes_driver: "crown", yes_needs_ride: "hand", maybe: "maybe" };
 import type { PickupLocation, Rsvp } from "@/lib/database.types";
 
 /**
@@ -19,7 +22,7 @@ export default function AttendanceFields({ prefix, existing, pickups, defaultSea
         {ATTENDANCE_OPTIONS.map((o) => (
           <label key={o.value} className="gf-radio">
             <input type="radio" name={`${prefix}choice`} value={o.value} required={required} checked={choice === o.value} onChange={() => setChoice(o.value)} />
-            {o.label}
+            {o.label}{OPTION_ICONS[o.value] && <Icon name={OPTION_ICONS[o.value]!} />}
           </label>
         ))}
       </div>
@@ -31,7 +34,7 @@ export default function AttendanceFields({ prefix, existing, pickups, defaultSea
       )}
       {choice === "yes_needs_ride" && (
         <div className="ml-2 mt-3 pl-3 border-l-2 text-sm space-y-2" style={{ borderColor: "var(--g-purple)" }}>
-          <div className="font-medium">🏠 Where should we pick you up?</div>
+          <div className="font-medium"><Icon name="house" /> Where should we pick you up?</div>
           <select name={`${prefix}pickup`} value={pickup} onChange={(e) => setPickup(e.target.value)} className="input">
             <option value="home">My home address (from my profile)</option>
             {pickups.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}

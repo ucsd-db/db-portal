@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Icon from "@/components/icon";
 import { requireAdmin } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import LocalTime from "@/components/local-time";
@@ -49,7 +50,7 @@ export default async function AdminEventsPage() {
                   {group && (
                     <div className="flex items-center gap-1 text-xs">
                       <Link href={`/groups/${group.id}`} className="btn-text py-0.5">Overview</Link>
-                      <form action={createFormForGroup}><input type="hidden" name="group_id" value={group.id} /><button className="btn-text py-0.5">📝 Form</button></form>
+                      <form action={createFormForGroup}><input type="hidden" name="group_id" value={group.id} /><button className="btn-text py-0.5"><Icon name="form" /> Form</button></form>
                       <ConfirmForm action={deleteGroup} message={`Delete "${group.name}" and all ${ds.length} of its days?`}><input type="hidden" name="id" value={group.id} /><input type="hidden" name="with_events" value="on" /><button className="btn-danger-text py-0.5">Delete</button></ConfirmForm>
                     </div>
                   )}
@@ -66,7 +67,7 @@ export default async function AdminEventsPage() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <Link href={`/events/${p.id}`} className="font-medium hover:underline">{p.title}</Link>
-                          <div className="text-xs" style={{ color: "var(--g-grey-600)" }}><LocalTime iso={p.starts_at} /> · ✅ {c("yes")} · 🤔 {c("maybe")} · ❌ {c("no")}</div>
+                          <div className="text-xs" style={{ color: "var(--g-grey-600)" }}><LocalTime iso={p.starts_at} /> · <Icon name="yes" /> {c("yes")} · <Icon name="maybe" /> {c("maybe")} · <Icon name="no" /> {c("no")}</div>
                         </div>
                         <div className="flex shrink-0 items-center gap-1 text-xs">
                           <Link href={`/admin/lineups?event=${p.id}`} className="btn-text py-0.5">Lineups</Link>

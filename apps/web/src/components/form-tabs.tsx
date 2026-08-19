@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import Icon from "@/components/icon";
 
 /** Google Forms style "Questions | Responses" tab bar for the admin form editor, with a share-link button pinned right. */
 export default function FormTabs({ id, responses, joinCode }: { id: string; responses?: number; joinCode: string }) {
@@ -26,7 +27,7 @@ export default function FormTabs({ id, responses, joinCode }: { id: string; resp
       })}
       <button type="button" onClick={copy} className="btn-text absolute right-2 md:right-4 top-1/2 -translate-y-1/2"
         title="Copy a link anyone can open without signing in — they fill it out, enter their email, and are added to the team">
-        {copied ? "✓ Link copied" : "🔗 Copy link"}
+        {copied ? <><Icon name="check" /> Link copied</> : <><Icon name="link" /> Copy link</>}
       </button>
     </div>
   );

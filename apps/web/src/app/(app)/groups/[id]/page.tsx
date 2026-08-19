@@ -9,6 +9,7 @@ import EventBatchForm from "@/components/event-batch-form";
 import { deleteEvent, deleteGroup, renameGroup } from "@/app/(app)/admin/actions";
 import ConfirmForm from "@/components/confirm-form";
 import EditDay from "@/components/edit-day";
+import Icon from "@/components/icon";
 import { createFormForGroup } from "@/app/(app)/admin/forms/actions";
 import type { Lineup } from "@db/lineup";
 import type { Car } from "@db/carpool";
@@ -64,9 +65,9 @@ export default async function GroupOverviewPage({ params }: { params: Promise<{ 
         </div>
         {isAdmin && (
           <div className="flex items-center gap-2">
-          <form action={createFormForGroup}><input type="hidden" name="group_id" value={group.id} /><button className="btn-primary">📝 Create form for this event</button></form>
+          <form action={createFormForGroup}><input type="hidden" name="group_id" value={group.id} /><button className="btn-primary"><Icon name="form" /> Create form for this event</button></form>
           <details className="relative">
-            <summary className="btn-secondary cursor-pointer list-none">＋ Add days</summary>
+            <summary className="btn-secondary cursor-pointer list-none"><Icon name="plus" /> Add days</summary>
             <div className="absolute right-0 z-10 mt-2 w-[34rem] max-w-[90vw] rounded-lg border bg-white p-4 shadow-lg" style={{ borderColor: "var(--g-grey-300)" }}>
               <EventBatchForm compact groupId={group.id} />
             </div>
@@ -77,7 +78,7 @@ export default async function GroupOverviewPage({ params }: { params: Promise<{ 
 
       {(forms.length > 0 || isAdmin) && (
         <div className="card !py-3 flex flex-wrap items-center gap-2 text-sm">
-          <span className="font-medium">📝 Forms:</span>
+          <span className="font-medium"><Icon name="form" /> Forms:</span>
           {forms.map((f) => (
             <Link key={f.id} href={isAdmin ? `/admin/forms/${f.id}` : `/forms/${f.id}`} className="chip chip-active">
               {f.title} · {f.status}{f.days < (events?.length ?? 0) ? ` · ${f.days}/${events?.length} days` : ""}
@@ -110,21 +111,21 @@ export default async function GroupOverviewPage({ params }: { params: Promise<{ 
                   </div>
                 )}
                 <Link href={`/events/${ev.id}`} className="font-medium text-base hover:underline">{ev.title}</Link>
-                <div className="text-sm" style={{ color: "var(--g-grey-600)" }}><LocalTime iso={ev.starts_at} />{ev.ends_at && <> – <LocalTime iso={ev.ends_at} mode="time" /></>}{ev.location_name && ` · 📍 ${ev.location_name}`}</div>
+                <div className="text-sm" style={{ color: "var(--g-grey-600)" }}><LocalTime iso={ev.starts_at} />{ev.ends_at && <> – <LocalTime iso={ev.ends_at} mode="time" /></>}{ev.location_name && <> · <Icon name="pin" /> {ev.location_name}</>}</div>
                 {ev.notes && <RichText text={ev.notes} className="!text-xs mt-1" />}
               </header>
 
               <div className="rounded-lg p-3 text-sm" style={{ background: "var(--g-grey-50)" }}>
                 <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs">
-                  <span>✅ <b>{yes.length}</b> yes</span><span>🤔 {maybe.length} maybe</span><span>❌ {no.length} no</span>
-                  <span>👑 {drivers.length} drivers · 💺 {seats} seats</span><span>🙋 <b>{needs.length}</b> need rides</span>
+                  <span><Icon name="yes" /> <b>{yes.length}</b> yes</span><span><Icon name="maybe" /> {maybe.length} maybe</span><span><Icon name="no" /> {no.length} no</span>
+                  <span><Icon name="crown" /> {drivers.length} drivers · <Icon name="seat" /> {seats} seats</span><span><Icon name="hand" /> <b>{needs.length}</b> need rides</span>
                 </div>
                 <details className="mt-2">
                   <summary className="cursor-pointer text-xs" style={{ color: "var(--g-blue)" }}>Who&apos;s coming</summary>
                   <ul className="mt-1 columns-2 text-xs">
                     {[...yes, ...maybe].map((r) => (
                       <li key={r.user_id}>{names[r.user_id] ?? "?"}{r.status === "maybe" && " (maybe)"}
-                        {r.ride === "driver" && ` 👑${r.seats ?? ""}`}{r.ride === "needs_ride" && ` 🙋${r.pickup_location_id ? ` ${pickupName.get(r.pickup_location_id) ?? ""}` : r.pickup_address ? ` ${r.pickup_address}` : ""}`}</li>
+                        {r.ride === "driver" && <> <Icon name="crown" />{r.seats ?? ""}</>}{r.ride === "needs_ride" && <> <Icon name="hand" />{r.pickup_location_id ? ` ${pickupName.get(r.pickup_location_id) ?? ""}` : r.pickup_address ? ` ${r.pickup_address}` : ""}</>}</li>
                     ))}
                     {!yes.length && !maybe.length && <li style={{ color: "var(--g-grey-600)" }}>Nobody yet.</li>}
                   </ul>
@@ -132,7 +133,7 @@ export default async function GroupOverviewPage({ params }: { params: Promise<{ 
               </div>
 
               <div>
-                <div className="flex items-center justify-between text-sm font-medium"><span>🛶 Lineups</span>{isAdmin && <Link href={`/admin/lineups?event=${ev.id}`} className="btn-text -mr-3">Edit</Link>}</div>
+                <div className="flex items-center justify-between text-sm font-medium"><span><Icon name="boat" /> Lineups</span>{isAdmin && <Link href={`/admin/lineups?event=${ev.id}`} className="btn-text -mr-3">Edit</Link>}</div>
                 {!evLineups.length && <p className="text-xs" style={{ color: "var(--g-grey-600)" }}>{isAdmin ? "None yet." : "Not published yet."}</p>}
                 <div className="space-y-2">
                   {evLineups.map((l) => (
@@ -145,13 +146,13 @@ export default async function GroupOverviewPage({ params }: { params: Promise<{ 
               </div>
 
               <div>
-                <div className="flex items-center justify-between text-sm font-medium"><span>🚗 Rides</span>{isAdmin && <Link href={`/admin/carpool?event=${ev.id}`} className="btn-text -mr-3">Edit</Link>}</div>
+                <div className="flex items-center justify-between text-sm font-medium"><span><Icon name="car" /> Rides</span>{isAdmin && <Link href={`/admin/carpool?event=${ev.id}`} className="btn-text -mr-3">Edit</Link>}</div>
                 {!cp && <p className="text-xs" style={{ color: "var(--g-grey-600)" }}>{isAdmin ? "Not set up yet." : "Not published yet."}</p>}
                 {cp && isAdmin && !cp.published && <span className="chip !py-0 text-[10px]">draft</span>}
                 <div className="grid gap-2 sm:grid-cols-2">
                   {cars.map((c) => (
                     <div key={c.id} className="rounded border p-2 text-xs" style={{ borderColor: "var(--g-grey-300)" }}>
-                      <div className="font-medium">🚗 {names[c.driverId] ?? "?"} <span style={{ color: "var(--g-grey-600)" }}>({c.passengerIds.length}/{c.capacity - 1})</span></div>
+                      <div className="font-medium"><Icon name="car" /> {names[c.driverId] ?? "?"} <span style={{ color: "var(--g-grey-600)" }}>({c.passengerIds.length}/{c.capacity - 1})</span></div>
                       <ol className="ml-4 list-decimal">{c.passengerIds.map((p) => <li key={p}>{names[p] ?? "?"}</li>)}</ol>
                     </div>
                   ))}

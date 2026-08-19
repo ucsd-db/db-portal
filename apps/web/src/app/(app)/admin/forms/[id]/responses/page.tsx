@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import LocalTime from "@/components/local-time";
 import { fmtDateTime } from "@/lib/format";
 import { toChoice, ATTENDANCE_OPTIONS } from "@/lib/attendance";
+import Icon from "@/components/icon";
 import type { FormQuestion, Profile, Rsvp } from "@/lib/database.types";
 import ExportCsv from "./export-csv";
 import { htmlToText } from "@/lib/html";
@@ -79,9 +80,9 @@ export default async function FormResponsesPage({ params }: { params: Promise<{ 
                 <div className="font-medium"><Link href={`/events/${e.id}`} className="hover:underline">{e.title}</Link></div>
                 <div className="text-xs text-slate-500"><LocalTime iso={e.starts_at} /></div>
                 <div className="mt-2 grid grid-cols-2 gap-x-3 text-xs">
-                  <span>✅ Yes: <b>{n((r) => r.status === "yes")}</b></span><span>🤔 Maybe: {n((r) => r.status === "maybe")}</span>
-                  <span>❌ No: {n((r) => r.status === "no")}</span><span>🙋 Need ride: <b>{n((r) => r.ride === "needs_ride")}</b></span>
-                  <span>👑 Drivers: {n((r) => r.ride === "driver")}</span><span>💺 Seats: <b>{seats}</b></span>
+                  <span><Icon name="yes" /> Yes: <b>{n((r) => r.status === "yes")}</b></span><span><Icon name="maybe" /> Maybe: {n((r) => r.status === "maybe")}</span>
+                  <span><Icon name="no" /> No: {n((r) => r.status === "no")}</span><span><Icon name="hand" /> Need ride: <b>{n((r) => r.ride === "needs_ride")}</b></span>
+                  <span><Icon name="crown" /> Drivers: {n((r) => r.ride === "driver")}</span><span><Icon name="seat" /> Seats: <b>{seats}</b></span>
                 </div>
                 <div className="mt-2 flex gap-3 text-xs"><Link href={`/admin/lineups?event=${e.id}`} className="underline">Lineups</Link><Link href={`/admin/carpool?event=${e.id}`} className="underline">Carpool</Link></div>
               </div>
@@ -105,7 +106,7 @@ export default async function FormResponsesPage({ params }: { params: Promise<{ 
 
       <div className="gf-card text-sm">
         <h3 className="font-medium mb-1">Haven’t responded ({missing.length})</h3>
-        <p style={{ color: "var(--g-grey-600)" }}>{missing.map((p) => p.full_name || p.email).join(", ") || "Everyone has responded 🎉"}</p>
+        <p style={{ color: "var(--g-grey-600)" }}>{missing.length ? missing.map((p) => p.full_name || p.email).join(", ") : <>Everyone has responded <Icon name="party" /></>}</p>
       </div>
       </div>
     </div>

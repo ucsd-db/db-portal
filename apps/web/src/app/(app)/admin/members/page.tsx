@@ -1,4 +1,5 @@
 import { requireAdmin } from "@/lib/session";
+import Icon from "@/components/icon";
 import { createClient } from "@/lib/supabase/server";
 import { removeMember, removePending, setMemberRole } from "../actions";
 import ConfirmForm from "@/components/confirm-form";
@@ -29,7 +30,7 @@ export default async function AdminMembersPage() {
       </div>
 
       <div className="sheet-wrap">
-        <div className="flex items-center gap-2 border-b px-3 py-2 text-xs" style={{ borderColor: "var(--g-grey-300)", background: "var(--g-green-soft)", color: "var(--g-green)" }}><span className="font-medium">▦ Roster</span><span style={{ color: "var(--g-grey-600)" }}>· click ✎ to edit a row</span></div>
+        <div className="flex items-center gap-2 border-b px-3 py-2 text-xs" style={{ borderColor: "var(--g-grey-300)", background: "var(--g-green-soft)", color: "var(--g-green)" }}><span className="font-medium"><Icon name="table" /> Roster</span><span style={{ color: "var(--g-grey-600)" }}>· click <Icon name="pen" /> to edit a row</span></div>
         <table className="sheet">
           <thead>
             <tr><th className="w-8 text-center">#</th>{COLS.map((c) => <th key={c} className="whitespace-nowrap">{c}</th>)}<th>Role</th><th></th></tr>

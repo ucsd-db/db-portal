@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Icon from "@/components/icon";
 import { requireOrg } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import LocalTime from "@/components/local-time";
@@ -15,7 +16,7 @@ export default async function FormsPage() {
     <div className="space-y-6">
       <section>
         <h1 className="text-2xl font-normal mb-3">Open forms</h1>
-        {!open.length && <p className="text-slate-500">Nothing to fill out right now 🎉</p>}
+        {!open.length && <p className="text-slate-500">Nothing to fill out right now <Icon name="party" /></p>}
         <ul className="space-y-2">
           {open.map((f) => { const r = mine(f); return (
             <li key={f.id}><Link href={`/forms/${f.id}`} className="card flex items-center justify-between gap-3 hover:border-sky-400">
