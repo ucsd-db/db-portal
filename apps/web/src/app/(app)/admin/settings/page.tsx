@@ -1,18 +1,36 @@
 import { requireAdmin } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { deletePickupLocation } from "../actions";
+import { deletePickupLocation, deleteSavedLocation } from "../actions";
 import PickupForm from "./pickup-form";
+import SavedLocationForm from "./saved-location-form";
 
 export default async function AdminSettingsPage() {
   const { org } = await requireAdmin();
   const supabase = await createClient();
-  const { data: pickups } = await supabase.from("pickup_locations").select("*").eq("org_id", org.id).order("sort_order").order("name");
+  const [{ data: pickups }, { data: locations }] = await Promise.all([
+    supabase.from("pickup_locations").select("*").eq("org_id", org.id).order("sort_order").order("name"),
+    supabase.from("saved_locations").select("*").eq("org_id", org.id).order("sort_order").order("name"),
+  ]);
   return (
     <div className="max-w-2xl space-y-6">
       <div>
         <h1 className="text-2xl font-normal">Team settings</h1>
         <p className="text-sm text-slate-500">Team: <b>{org.name}</b> · join code <span className="font-mono">{org.join_code}</span></p>
       </div>
+      <section>
+        <h2 className="text-lg font-medium mb-1">Saved locations</h2>
+        <p className="text-sm text-slate-500 mb-3">Named places (with coordinates) that pop up as suggestions when creating events.</p>
+        <SavedLocationForm />
+        <ul className="mt-3 space-y-1">
+          {locations?.map((l) => (
+            <li key={l.id} className="card py-2 flex items-center justify-between text-sm">
+              <span>{l.name} <span className="text-xs text-slate-400">{[l.address, l.city, l.zipcode].filter(Boolean).join(", ")}{l.lat != null ? ` (${l.lat.toFixed(4)}, ${l.lon?.toFixed(4)})` : " · no coords"}</span></span>
+              <form action={deleteSavedLocation}><input type="hidden" name="id" value={l.id} /><button className="text-xs text-red-600 underline">Delete</button></form>
+            </li>
+          ))}
+          {!locations?.length && <li className="text-sm text-slate-400">None yet.</li>}
+        </ul>
+      </section>
       <section>
         <h2 className="text-lg font-medium mb-1">Pickup locations</h2>
         <p className="text-sm text-slate-500 mb-3">Named meetup spots paddlers can pick when they need a ride (e.g. each campus college, “Peterson Loop”). Add lat/lon so the carpool map can route to them; otherwise the paddler’s home address is used.</p>

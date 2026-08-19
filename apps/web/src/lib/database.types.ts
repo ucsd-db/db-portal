@@ -68,6 +68,19 @@ export type Announcement = {
 
 export type EventKind = "practice" | "race" | "social" | "other";
 
+export type SavedLocation = {
+  id: string;
+  org_id: string;
+  name: string;
+  address: string | null;
+  city: string | null;
+  zipcode: string | null;
+  lat: number | null;
+  lon: number | null;
+  sort_order: number;
+  created_at: string;
+};
+
 export type PickupLocation = {
   id: string;
   org_id: string;
@@ -216,6 +229,14 @@ export type Database = {
         Relationships: [
           { foreignKeyName: "announcements_org_id_fkey"; columns: ["org_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },
           { foreignKeyName: "announcements_author_id_fkey"; columns: ["author_id"]; isOneToOne: false; referencedRelation: "profiles"; referencedColumns: ["id"] },
+        ];
+      };
+      saved_locations: {
+        Row: Row<SavedLocation>;
+        Insert: Insert<SavedLocation, "id" | "address" | "city" | "zipcode" | "lat" | "lon" | "sort_order" | "created_at">;
+        Update: Partial<SavedLocation>;
+        Relationships: [
+          { foreignKeyName: "saved_locations_org_id_fkey"; columns: ["org_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },
         ];
       };
       pickup_locations: {
