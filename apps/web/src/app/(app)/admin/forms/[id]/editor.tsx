@@ -10,6 +10,7 @@ import EventBatchForm from "@/components/event-batch-form";
 import Icon from "@/components/icon";
 import RichEditor from "@/components/rich-editor";
 import RichText from "@/components/rich-text";
+import { ATTENDANCE_OPTIONS } from "@/lib/attendance";
 
 type EventOpt = { id: string; title: string; kind: string; starts_at: string; group_id: string | null };
 type GroupOpt = { id: string; name: string };
@@ -115,6 +116,45 @@ export default function FormEditor({ id, initial, events, groups }: { id: string
           );
         })}
       </div>
+
+      {/* automatic questions — shown here so the editor matches what members see */}
+      <div className="gf-card space-y-1 text-sm" style={{ borderLeft: "4px solid var(--g-grey-300)" }}>
+        <div className="flex items-center justify-between">
+          <div className="text-base font-normal"><Icon name="user" /> Your info</div>
+          <span className="chip !py-0 text-[10px]">Automatic</span>
+        </div>
+        <p className="text-xs" style={{ color: "var(--g-grey-600)" }}>Every form starts with the member’s name, phone, weight and address, pulled from their profile — so you don’t have to ask.</p>
+      </div>
+
+      <div className="gf-card space-y-2 text-sm" style={{ borderLeft: "4px solid var(--g-grey-300)", opacity: f.ask_weight ? 1 : 0.55 }}>
+        <div className="flex items-center justify-between">
+          <div className="text-base font-normal"><Icon name="weight" /> What&apos;s your current weight? (lb)</div>
+          <span className="chip !py-0 text-[10px]">Automatic</span>
+        </div>
+        <p className="text-xs" style={{ color: "var(--g-grey-600)" }}>Members see a number box; the answer updates their profile so lineups stay accurate.</p>
+        <label className="flex items-center gap-2 text-xs">
+          <input type="checkbox" checked={f.ask_weight} onChange={(e) => set("ask_weight", e.target.checked)} />
+          Include this question {!f.ask_weight && "— currently hidden from members"}
+        </label>
+      </div>
+
+      {f.events.map((fe, i) => {
+        const ev = events.find((e) => e.id === fe.event_id);
+        return (
+          <div key={fe.event_id} className="gf-card space-y-2 text-sm" style={{ borderLeft: "4px solid var(--g-grey-300)" }}>
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-base font-normal"><Icon name={i % 2 ? "moon" : "sun"} /> {fe.prompt || `Will you be attending ${ev?.title ?? "this day"}?`} <span className="gf-required">*</span></div>
+              <span className="chip !py-0 text-[10px] whitespace-nowrap">Automatic</span>
+            </div>
+            {ev && <p className="text-xs" style={{ color: "var(--g-grey-600)" }}><LocalTime iso={ev.starts_at} /> — added because this day is checked above; uncheck it there to remove.</p>}
+            <div className="text-xs" style={{ color: "var(--g-grey-600)" }}>
+              {ATTENDANCE_OPTIONS.map((o) => <div key={o.value} className="flex items-center gap-2 py-0.5"><span className="inline-block h-3 w-3 rounded-full border" style={{ borderColor: "var(--g-grey-600)" }} />{o.label}</div>)}
+              <div className="pl-5">…drivers are asked how many seats, riders pick a pickup spot.</div>
+            </div>
+            <input value={fe.prompt ?? ""} onChange={(e) => setPrompt(fe.event_id, e.target.value)} placeholder="Custom prompt (optional)" className="input-line text-xs" />
+          </div>
+        );
+      })}
 
       {/* question cards */}
       {f.questions.map((q, i) => {
