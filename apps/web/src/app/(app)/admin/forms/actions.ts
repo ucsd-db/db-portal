@@ -19,7 +19,21 @@ export async function createForm(fd: FormData) {
   redirect(`/admin/forms/${data.id}`);
 }
 
-/** Create a draft form pre-linked to every day in an event group, then open the editor. */
+/** Start a draft form as a copy of a template (the editable cards next to "Blank form"). */
+export async function createFromTemplate(fd: FormData) {
+  const { org, userId } = await requireAdmin();
+  const supabase = await createClient();
+  const { data: tpl } = await supabase.from("forms").select("*").eq("id", String(fd.get("template_id"))).eq("org_id", org.id).eq("status", "template").maybeSingle();
+  if (!tpl) throw new Error("Template not found");
+  const { data, error } = await supabase.from("forms")
+    .insert({ org_id: org.id, created_by: userId, title: tpl.title, description: tpl.description, questions: tpl.questions, ask_weight: tpl.ask_weight })
+    .select("id").single();
+  if (error) throw new Error(error.message);
+  redirect(`/admin/forms/${data.id}`);
+}
+
+/** Create a draft form pre-linked to every day in an event group, then open the editor.
+ * Starts from the org's oldest template (usually "Practice form") when one exists. */
 export async function createFormForGroup(fd: FormData) {
   const { org, userId } = await requireAdmin();
   const groupId = String(fd.get("group_id"));
@@ -29,8 +43,10 @@ export async function createFormForGroup(fd: FormData) {
     supabase.from("events").select("id").eq("group_id", groupId).eq("org_id", org.id).order("starts_at"),
   ]);
   if (!group) throw new Error("Group not found");
+  const { data: tpl } = await supabase.from("forms").select("*").eq("org_id", org.id).eq("status", "template").order("created_at").limit(1).maybeSingle();
   const { data: form, error } = await supabase.from("forms")
-    .insert({ org_id: org.id, created_by: userId, title: `${group.name} Form` })
+    .insert({ org_id: org.id, created_by: userId, title: `${group.name} Form`,
+      description: tpl?.description ?? "", questions: tpl?.questions ?? [], ask_weight: tpl?.ask_weight ?? true })
     .select("id").single();
   if (error) throw new Error(error.message);
   if (events?.length) await supabase.from("form_events").insert(events.map((e, i) => ({ form_id: form.id, event_id: e.id, sort_order: i })));
@@ -39,7 +55,7 @@ export async function createFormForGroup(fd: FormData) {
 }
 
 export type FormPayload = {
-  title: string; description: string; due_at: string | null; status: "draft" | "open" | "closed";
+  title: string; description: string; due_at: string | null; status: "draft" | "open" | "closed" | "template";
   ask_weight: boolean;
   questions: FormQuestion[];
   events: { event_id: string; prompt: string | null }[];

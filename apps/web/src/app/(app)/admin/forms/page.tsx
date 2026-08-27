@@ -3,7 +3,7 @@ import Icon from "@/components/icon";
 import { requireAdmin } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import LocalTime from "@/components/local-time";
-import { createForm, duplicateForm } from "./actions";
+import { createForm, createFromTemplate, duplicateForm } from "./actions";
 import FormMenu from "./form-menu";
 
 const status: Record<string, [string, string, string]> = { draft: ["Draft", "var(--g-grey-100)", "var(--g-grey-600)"], open: ["Accepting responses", "var(--g-green-soft)", "var(--g-green)"], closed: ["Closed", "#fef7e0", "#b06000"] };
@@ -11,10 +11,12 @@ const status: Record<string, [string, string, string]> = { draft: ["Draft", "var
 export default async function AdminFormsPage() {
   const { org } = await requireAdmin();
   const supabase = await createClient();
-  const [{ data: forms }, { count: memberCount }] = await Promise.all([
+  const [{ data: allForms }, { count: memberCount }] = await Promise.all([
     supabase.from("forms").select("*, form_responses(user_id), form_events(event_id)").eq("org_id", org.id).order("created_at", { ascending: false }),
     supabase.from("memberships").select("*", { count: "exact", head: true }).eq("org_id", org.id),
   ]);
+  const templates = (allForms ?? []).filter((f) => f.status === "template");
+  const forms = (allForms ?? []).filter((f) => f.status !== "template");
   return (
     <div className="mx-auto max-w-[1100px]">
       <section className="mb-6">
@@ -28,15 +30,21 @@ export default async function AdminFormsPage() {
               <span className="px-2 text-center text-[10px] leading-tight" style={{ color: "var(--g-grey-600)" }}>your questions only</span>
             </button>
           </form>
-          <form action={createForm}>
-            <input type="hidden" name="template" value="practice" />
-            <button className="card card-hover flex h-32 w-40 flex-col items-center justify-center gap-2 !p-0" style={{ background: "#fff" }}>
-              <span className="text-4xl" style={{ color: "var(--g-green)" }}><Icon name="boat" /></span>
-              <span className="text-xs">Practice form</span>
-              <span className="px-2 text-center text-[10px] leading-tight" style={{ color: "var(--g-grey-600)" }}>weight + attendance per day built in</span>
-            </button>
-          </form>
+          {templates.map((t) => (
+            <div key={t.id} className="relative">
+              <FormMenu id={t.id} title={t.title} />
+              <form action={createFromTemplate}>
+                <input type="hidden" name="template_id" value={t.id} />
+                <button className="card card-hover flex h-32 w-40 flex-col items-center justify-center gap-2 !p-0" style={{ background: "#fff" }}>
+                  <span className="text-4xl" style={{ color: "var(--g-green)" }}><Icon name="boat" /></span>
+                  <span className="px-1 text-xs line-clamp-1">{t.title}</span>
+                  <span className="px-2 text-center text-[10px] leading-tight" style={{ color: "var(--g-grey-600)" }}>{(t.questions as unknown[]).length} question{(t.questions as unknown[]).length === 1 ? "" : "s"}{t.ask_weight ? " + weight" : ""} · attendance per day</span>
+                </button>
+              </form>
+            </div>
+          ))}
         </div>
+        {templates.length > 0 && <p className="mt-2 text-xs" style={{ color: "var(--g-grey-600)" }}>Click a template to start a form from it — or use its ⋮ menu to edit what it includes.</p>}
       </section>
       <section>
         <h2 className="text-base font-medium mb-3">Your forms</h2>
