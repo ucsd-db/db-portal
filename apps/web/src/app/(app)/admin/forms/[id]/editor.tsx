@@ -130,20 +130,15 @@ export default function FormEditor({ id, initial, events, groups, pickups }: { i
         </div>
       </div>
 
-      {f.ask_weight ? (
+      {f.ask_weight && (
         <div className="gf-card space-y-3">
           <div className="flex items-start justify-between gap-2">
             <div className="text-base font-normal"><Icon name="weight" /> What&apos;s your current weight? (lb)</div>
-            <span className="flex items-center gap-1">
-              <span className="chip !py-0 text-[10px]">Automatic</span>
-              <button type="button" onClick={() => set("ask_weight", false)} className="btn-text py-0.5" title="Remove this question"><Icon name="trash" /></button>
-            </span>
+            <button type="button" onClick={() => set("ask_weight", false)} className="btn-text py-0.5" title="Delete"><Icon name="trash" /></button>
           </div>
           <p className="text-xs" style={{ color: "var(--g-grey-600)" }}>Coaches need this to make lineups. Leave as-is if unchanged — saved to your profile.</p>
           <input type="number" disabled placeholder="Your answer" className="input-line w-1/2" />
         </div>
-      ) : (
-        <button type="button" onClick={() => set("ask_weight", true)} className="btn-text text-xs"><Icon name="plus" /> Add the automatic weight question back</button>
       )}
 
       {f.events.map((fe, i) => {
