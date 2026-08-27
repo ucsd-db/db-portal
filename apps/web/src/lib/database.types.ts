@@ -148,7 +148,7 @@ export type Form = {
   title: string;
   description: string;
   due_at: string | null;
-  status: "draft" | "open" | "closed";
+  status: "draft" | "open" | "closed" | "template";
   questions: Json;   // FormQuestion[]
   ask_weight: boolean;
   created_by: string | null;

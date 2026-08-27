@@ -55,7 +55,8 @@ export default function FormEditor({ id, initial, events, groups, pickups }: { i
     setF(payload); setMsg(status === "open" ? "Saved — form is open to members" : "Saved"); router.refresh();
   });
 
-  const statusChip = { draft: ["Draft", "var(--g-grey-100)", "var(--g-grey-600)"], open: ["Accepting responses", "var(--g-green-soft)", "var(--g-green)"], closed: ["Closed", "#fef7e0", "#b06000"] }[f.status];
+  const isTemplate = f.status === "template";
+  const statusChip = { draft: ["Draft", "var(--g-grey-100)", "var(--g-grey-600)"], open: ["Accepting responses", "var(--g-green-soft)", "var(--g-green)"], closed: ["Closed", "#fef7e0", "#b06000"], template: ["Template", "var(--g-purple-soft)", "var(--g-purple)"] }[f.status];
 
   return (
     <div className="mx-auto max-w-[760px] space-y-3">
@@ -65,24 +66,25 @@ export default function FormEditor({ id, initial, events, groups, pickups }: { i
         <span className="flex-1" />
         <Link href={`/forms/${id}`} className="btn-text"><Icon name="eye" /> Preview</Link>
         <button type="button" onClick={() => save()} disabled={pending} className="btn-secondary">Save</button>
-        {f.status !== "open" && <button type="button" onClick={() => save("open")} disabled={pending} className="btn-purple">Send</button>}
+        {!isTemplate && f.status !== "open" && <button type="button" onClick={() => save("open")} disabled={pending} className="btn-purple">Send</button>}
         {f.status === "open" && <button type="button" onClick={() => save("closed")} disabled={pending} className="btn-secondary">Stop accepting responses</button>}
       </div>
+      {isTemplate && <p className="rounded bg-white/70 p-2 text-center text-xs" style={{ color: "var(--g-grey-600)" }}>Template — edits here change how new forms start when an admin picks this card. Days are added on each form, not on the template.</p>}
       {msg && <p className="text-xs text-center" style={{ color: "var(--g-green)" }}>{msg}</p>}
 
       {/* header card */}
       <div className="gf-header space-y-2">
         <input value={f.title} onChange={(e) => set("title", e.target.value)} placeholder="Untitled form" className="input-line text-[32px] leading-tight" />
         <RichEditor value={f.description} onChange={(html) => set("description", html)} minRows={8} placeholder={"Form description — meetup times, reminders, who to DM…"} />
-        <div className="grid grid-cols-2 gap-4 pt-2 text-sm">
+        {!isTemplate && <div className="grid grid-cols-2 gap-4 pt-2 text-sm">
           <div><label className="label">Due</label><input type="datetime-local" value={toLocal(f.due_at)} onChange={(e) => set("due_at", e.target.value ? new Date(e.target.value).toISOString() : null)} className="input" /></div>
           <div><label className="label">Status</label>
             <select value={f.status} onChange={(e) => set("status", e.target.value as FormPayload["status"])} className="input"><option value="draft">Draft (hidden)</option><option value="open">Open (accepting responses)</option><option value="closed">Closed</option></select></div>
-        </div>
+        </div>}
       </div>
 
       {/* events card */}
-      <div className="gf-card space-y-2">
+      {!isTemplate && <div className="gf-card space-y-2">
         <div className="flex items-center justify-between">
           <div className="text-base"><Icon name="calendar" /> Days / events on this form <span className="gf-required">*</span></div>
           <div className="flex items-center gap-1">
@@ -115,7 +117,7 @@ export default function FormEditor({ id, initial, events, groups, pickups }: { i
             </div>
           );
         })}
-      </div>
+      </div>}
 
       {/* automatic questions — rendered exactly as members will see them */}
       <div className="gf-card text-sm">
@@ -213,6 +215,7 @@ export default function FormEditor({ id, initial, events, groups, pickups }: { i
 
       <div className="flex justify-center">
         <button type="button" onClick={addQ} className="rounded-full border bg-white px-5 py-2 text-sm font-medium shadow-sm" style={{ borderColor: "var(--g-grey-300)", color: "var(--g-grey-600)" }}>⊕ Add question</button>
+        {!f.ask_weight && <button type="button" onClick={() => set("ask_weight", true)} className="rounded-full border bg-white px-5 py-2 text-sm font-medium shadow-sm" style={{ borderColor: "var(--g-grey-300)", color: "var(--g-grey-600)" }}><Icon name="weight" /> Add weight question</button>}
       </div>
 
       <div className="flex justify-between pt-6 text-xs">
