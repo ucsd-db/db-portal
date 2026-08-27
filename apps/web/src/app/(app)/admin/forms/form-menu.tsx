@@ -18,7 +18,7 @@ export default function FormMenu({ id, title }: { id: string; title: string }) {
   return (
     <div ref={ref} className="absolute right-1 top-1 z-10">
       <button type="button" onClick={() => setOpen((v) => !v)} aria-label="Form options" aria-expanded={open}
-        className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-black/10" style={{ color: "var(--g-grey-600)" }}>
+        className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 hover:bg-white" style={{ color: "var(--g-grey-600)" }}>
         <Icon name="dots" />
       </button>
       {open && (
