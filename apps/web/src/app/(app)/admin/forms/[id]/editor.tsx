@@ -3,14 +3,14 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import type { FormQuestion, QuestionType } from "@/lib/database.types";
+import type { FormQuestion, PickupLocation, QuestionType } from "@/lib/database.types";
 import LocalTime from "@/components/local-time";
 import { deleteForm, saveForm, type FormPayload } from "../actions";
 import EventBatchForm from "@/components/event-batch-form";
 import Icon from "@/components/icon";
 import RichEditor from "@/components/rich-editor";
 import RichText from "@/components/rich-text";
-import { ATTENDANCE_OPTIONS } from "@/lib/attendance";
+import AttendanceFields from "@/components/attendance-fields";
 
 type EventOpt = { id: string; title: string; kind: string; starts_at: string; group_id: string | null };
 type GroupOpt = { id: string; name: string };
@@ -25,7 +25,7 @@ const TYPES: { value: QuestionType; label: string; icon: string }[] = [
 const uid = () => Math.random().toString(36).slice(2, 9);
 const toLocal = (iso: string | null) => (iso ? new Date(new Date(iso).getTime() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 16) : "");
 
-export default function FormEditor({ id, initial, events, groups }: { id: string; initial: FormPayload; events: EventOpt[]; groups: GroupOpt[] }) {
+export default function FormEditor({ id, initial, events, groups, pickups }: { id: string; initial: FormPayload; events: EventOpt[]; groups: GroupOpt[]; pickups: PickupLocation[] }) {
   const router = useRouter();
   const [f, setF] = useState<FormPayload>(initial);
   const [focus, setFocus] = useState<string | null>(null);
@@ -117,41 +117,55 @@ export default function FormEditor({ id, initial, events, groups }: { id: string
         })}
       </div>
 
-      {/* automatic questions — shown here so the editor matches what members see */}
-      <div className="gf-card space-y-1 text-sm" style={{ borderLeft: "4px solid var(--g-grey-300)" }}>
+      {/* automatic questions — rendered exactly as members will see them */}
+      <div className="gf-card text-sm">
         <div className="flex items-center justify-between">
-          <div className="text-base font-normal"><Icon name="user" /> Your info</div>
+          <div className="font-medium text-base">Your info</div>
           <span className="chip !py-0 text-[10px]">Automatic</span>
         </div>
-        <p className="text-xs" style={{ color: "var(--g-grey-600)" }}>Every form starts with the member’s name, phone, weight and address, pulled from their profile — so you don’t have to ask.</p>
+        <p className="text-xs mb-2" style={{ color: "var(--g-grey-600)" }}>Pulled from each member’s profile so we don’t ask every week.</p>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1" style={{ color: "var(--g-grey-600)" }}>
+          <span><Icon name="user" /> Member’s name</span><span><Icon name="phone" /> phone</span>
+          <span><Icon name="weight" /> weight</span><span><Icon name="house" /> address</span>
+        </div>
       </div>
 
-      <div className="gf-card space-y-2 text-sm" style={{ borderLeft: "4px solid var(--g-grey-300)", opacity: f.ask_weight ? 1 : 0.55 }}>
-        <div className="flex items-center justify-between">
-          <div className="text-base font-normal"><Icon name="weight" /> What&apos;s your current weight? (lb)</div>
-          <span className="chip !py-0 text-[10px]">Automatic</span>
+      {f.ask_weight ? (
+        <div className="gf-card space-y-3">
+          <div className="flex items-start justify-between gap-2">
+            <div className="text-base font-normal"><Icon name="weight" /> What&apos;s your current weight? (lb)</div>
+            <span className="flex items-center gap-1">
+              <span className="chip !py-0 text-[10px]">Automatic</span>
+              <button type="button" onClick={() => set("ask_weight", false)} className="btn-text py-0.5" title="Remove this question"><Icon name="trash" /></button>
+            </span>
+          </div>
+          <p className="text-xs" style={{ color: "var(--g-grey-600)" }}>Coaches need this to make lineups. Leave as-is if unchanged — saved to your profile.</p>
+          <input type="number" disabled placeholder="Your answer" className="input-line w-1/2" />
         </div>
-        <p className="text-xs" style={{ color: "var(--g-grey-600)" }}>Members see a number box; the answer updates their profile so lineups stay accurate.</p>
-        <label className="flex items-center gap-2 text-xs">
-          <input type="checkbox" checked={f.ask_weight} onChange={(e) => set("ask_weight", e.target.checked)} />
-          Include this question {!f.ask_weight && "— currently hidden from members"}
-        </label>
-      </div>
+      ) : (
+        <button type="button" onClick={() => set("ask_weight", true)} className="btn-text text-xs"><Icon name="plus" /> Add the automatic weight question back</button>
+      )}
 
       {f.events.map((fe, i) => {
         const ev = events.find((e) => e.id === fe.event_id);
         return (
-          <div key={fe.event_id} className="gf-card space-y-2 text-sm" style={{ borderLeft: "4px solid var(--g-grey-300)" }}>
-            <div className="flex items-center justify-between gap-2">
-              <div className="text-base font-normal"><Icon name={i % 2 ? "moon" : "sun"} /> {fe.prompt || `Will you be attending ${ev?.title ?? "this day"}?`} <span className="gf-required">*</span></div>
-              <span className="chip !py-0 text-[10px] whitespace-nowrap">Automatic</span>
+          <div key={fe.event_id} className="gf-card space-y-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex flex-1 items-baseline gap-2 text-base">
+                <Icon name={i % 2 ? "moon" : "sun"} />
+                <input value={fe.prompt ?? ""} onChange={(e) => setPrompt(fe.event_id, e.target.value)}
+                  placeholder={`Will you be attending ${ev?.title ?? "this day"}?`} className="input-line flex-1 text-base" />
+                <span className="gf-required">*</span>
+              </div>
+              <span className="flex items-center gap-1">
+                <span className="chip !py-0 text-[10px] whitespace-nowrap">Automatic</span>
+                <button type="button" onClick={() => toggleEvent(fe.event_id)} className="btn-text py-0.5" title="Remove this day from the form"><Icon name="trash" /></button>
+              </span>
             </div>
-            {ev && <p className="text-xs" style={{ color: "var(--g-grey-600)" }}><LocalTime iso={ev.starts_at} /> — added because this day is checked above; uncheck it there to remove.</p>}
-            <div className="text-xs" style={{ color: "var(--g-grey-600)" }}>
-              {ATTENDANCE_OPTIONS.map((o) => <div key={o.value} className="flex items-center gap-2 py-0.5"><span className="inline-block h-3 w-3 rounded-full border" style={{ borderColor: "var(--g-grey-600)" }} />{o.label}</div>)}
-              <div className="pl-5">…drivers are asked how many seats, riders pick a pickup spot.</div>
-            </div>
-            <input value={fe.prompt ?? ""} onChange={(e) => setPrompt(fe.event_id, e.target.value)} placeholder="Custom prompt (optional)" className="input-line text-xs" />
+            {ev && <p className="text-xs" style={{ color: "var(--g-grey-600)" }}><LocalTime iso={ev.starts_at} /> · answers feed attendance, lineups and carpool</p>}
+            <fieldset disabled className="pointer-events-none">
+              <AttendanceFields prefix={`preview_${fe.event_id}_`} existing={null} pickups={pickups} defaultSeats={3} required={false} />
+            </fieldset>
           </div>
         );
       })}
@@ -207,7 +221,7 @@ export default function FormEditor({ id, initial, events, groups }: { id: string
       </div>
 
       <div className="flex justify-between pt-6 text-xs">
-        <form action={deleteForm}><input type="hidden" name="id" value={id} /><button className="btn-danger-text">Delete form</button></form>
+        <form action={deleteForm} onSubmit={(e) => { if (!confirm(`Delete “${f.title || "this form"}” and all its responses? This can’t be undone.`)) e.preventDefault(); }}><input type="hidden" name="id" value={id} /><button className="btn-danger-text">Delete form</button></form>
         <span style={{ color: "var(--g-grey-600)" }}>Members get name / weight / phone / address from their profile automatically.</span>
       </div>
     </div>
