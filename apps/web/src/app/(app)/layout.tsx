@@ -2,6 +2,7 @@ import { getSession } from "@/lib/session";
 import { signOut } from "@/app/(auth)/actions";
 import NavRail from "@/components/nav-rail";
 import Icon from "@/components/icon";
+import HeaderSearch from "@/components/header-search";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const { profile, membership, isAdmin } = await getSession();
@@ -16,7 +17,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
             <span className="font-medium" style={{ color: "var(--g-grey-900)" }}>{membership?.organization.name ?? "Team"}</span> Portal
           </span>
         </div>
-        <div className="flex-1" />
+        <div className="hidden flex-1 px-4 sm:block"><HeaderSearch /></div>
+        <div className="flex-1 sm:hidden" />
         <div className="hidden sm:block text-sm" style={{ color: "var(--g-grey-600)" }}>{profile.email}{isAdmin && " · admin"}</div>
         <form action={signOut} title="Sign out">
           <button className="flex h-9 w-9 items-center justify-center rounded-full text-white font-medium" style={{ background: "var(--g-blue)" }} aria-label="Sign out">{initial}</button>
