@@ -94,8 +94,9 @@ export default function FormsHome({ forms, templates, memberCount }: { forms: Fo
                       <Link href={`/admin/forms/${f.id}`} className="block truncate font-medium hover:underline">{f.title}</Link>
                       <div className="mt-1 flex items-center gap-2 text-xs" style={grey}>
                         <span style={{ color: st[1] }}>●</span>
-                        <span className="truncate">{st[0]} · {f.responses}/{memberCount}{f.due_at && <> · due <LocalTime iso={f.due_at} /></>}</span>
+                        <span className="truncate">{st[0]} · {f.responses}/{memberCount}</span>
                       </div>
+                      {f.due_at && <div className="mt-0.5 pl-[18px] text-xs" style={grey}>due <LocalTime iso={f.due_at} /></div>}
                     </div>
                     <FormMenu id={f.id} title={f.title} className="relative -mr-1 shrink-0" />
                   </div>
