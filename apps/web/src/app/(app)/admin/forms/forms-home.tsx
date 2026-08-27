@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Icon from "@/components/icon";
 import LocalTime from "@/components/local-time";
@@ -29,19 +29,15 @@ function Thumb({ lines, bar = "var(--g-purple)" }: { lines: string[]; bar?: stri
 
 export default function FormsHome({ forms, templates, memberCount }: { forms: FormRow[]; templates: TemplateRow[]; memberCount: number }) {
   const [q, setQ] = useState("");
+  // The search pill lives in the top app bar (HeaderSearch) and broadcasts keystrokes here.
+  useEffect(() => {
+    const h = (e: Event) => setQ(String((e as CustomEvent).detail ?? ""));
+    window.addEventListener("portal-search", h);
+    return () => window.removeEventListener("portal-search", h);
+  }, []);
   const shown = forms.filter((f) => f.title.toLowerCase().includes(q.trim().toLowerCase()));
   return (
     <div className="-m-4 md:-m-6 min-h-full">
-      {/* search */}
-      <div className="border-b bg-white px-4 py-3" style={{ borderColor: "var(--g-grey-300)" }}>
-        <div className="relative mx-auto max-w-[720px]">
-          <span className="absolute left-4 top-1/2 -translate-y-1/2" style={grey}><Icon name="search" /></span>
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search forms"
-            className="w-full rounded-full py-2.5 pl-11 pr-4 text-sm outline-none focus:bg-white focus:shadow-md"
-            style={{ background: "var(--g-grey-100)" }} />
-        </div>
-      </div>
-
       {/* template gallery */}
       <div className="border-b px-4 py-5 md:px-8" style={{ background: "var(--g-grey-50)", borderColor: "var(--g-grey-300)" }}>
         <div className="mx-auto max-w-[1100px]">
