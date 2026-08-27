@@ -168,6 +168,7 @@ export type FormResponse = {
   user_id: string;
   answers: Json;     // Record<questionId, string | string[] | number | boolean>
   submitted_at: string;
+  first_submitted_at: string | null; // set by DB trigger; basis for the late flag
 };
 
 export type LineupRow = {
@@ -286,7 +287,7 @@ export type Database = {
       };
       form_responses: {
         Row: Row<FormResponse>;
-        Insert: Insert<FormResponse, "answers" | "submitted_at">;
+        Insert: Insert<FormResponse, "answers" | "submitted_at" | "first_submitted_at">;
         Update: Partial<FormResponse>;
         Relationships: [
           { foreignKeyName: "form_responses_form_id_fkey"; columns: ["form_id"]; isOneToOne: false; referencedRelation: "forms"; referencedColumns: ["id"] },

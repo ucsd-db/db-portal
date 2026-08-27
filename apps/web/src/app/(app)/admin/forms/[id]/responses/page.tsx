@@ -54,8 +54,14 @@ export default async function FormResponsesPage({ params }: { params: Promise<{ 
     return htmlToText(String(a));
   };
 
-  const header = ["Name", "Email", "Weight (lb)", "Phone", ...events.map((e) => e.title), ...questions.map((q) => q.label), "Submitted"];
-  const rows = responded.map((p) => [p.full_name, p.email, p.weight_lb ?? "", p.phone ?? "", ...events.map((e) => rideCell(rsvpBy.get(`${e.id}:${p.id}`))), ...questions.map((q) => ansCell(p.id, q)), fmtDateTime(respBy.get(p.id)!.submitted_at)]);
+  const dueAt = form.due_at ? new Date(form.due_at) : null;
+  const isLate = (uid: string) => {
+    const r = respBy.get(uid);
+    return !!dueAt && !!r && new Date(r.first_submitted_at ?? r.submitted_at) > dueAt;
+  };
+  const header = ["Name", "Email", "Weight (lb)", "Phone", ...events.map((e) => e.title), ...questions.map((q) => q.label), "Submitted", "On time"];
+  const rows = responded.map((p) => [p.full_name, p.email, p.weight_lb ?? "", p.phone ?? "", ...events.map((e) => rideCell(rsvpBy.get(`${e.id}:${p.id}`))), ...questions.map((q) => ansCell(p.id, q)), fmtDateTime(respBy.get(p.id)!.submitted_at), dueAt ? (isLate(p.id) ? "Late" : "On time") : ""]);
+  const lateFlags = responded.map((p) => isLate(p.id));
 
   return (
     <div className="gf-page -m-4 md:-m-6 min-h-full p-4 md:p-6">
@@ -98,7 +104,12 @@ export default async function FormResponsesPage({ params }: { params: Promise<{ 
         <table className="sheet">
           <thead><tr><th className="w-8 text-center">#</th>{header.map((h) => <th key={h} className="whitespace-nowrap">{h}</th>)}</tr></thead>
           <tbody>
-            {rows.map((r, i) => <tr key={i}><td className="text-center" style={{ background: "var(--g-grey-100)", color: "var(--g-grey-600)" }}>{i + 1}</td>{r.map((c, j) => <td key={j} className="max-w-[240px] whitespace-pre-wrap">{String(c)}</td>)}</tr>)}
+            {rows.map((r, i) => (
+              <tr key={i} style={lateFlags[i] ? { background: "#fce8e680" } : undefined}>
+                <td className="text-center" style={{ background: "var(--g-grey-100)", color: "var(--g-grey-600)" }}>{i + 1}</td>
+                {r.map((c, j) => <td key={j} className="max-w-[240px] whitespace-pre-wrap" style={j === r.length - 1 && c ? { color: c === "Late" ? "var(--g-red)" : "var(--g-green)", fontWeight: 500 } : undefined}>{String(c)}</td>)}
+              </tr>
+            ))}
             {!rows.length && <tr><td colSpan={header.length + 1} className="p-3" style={{ color: "var(--g-grey-600)" }}>No responses yet.</td></tr>}
           </tbody>
         </table>
