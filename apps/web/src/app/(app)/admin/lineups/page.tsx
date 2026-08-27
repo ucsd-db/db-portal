@@ -1,13 +1,15 @@
 import Link from "next/link";
 import { requireAdmin } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { fmtDate } from "@/lib/format";
+import LocalTime from "@/components/local-time";
+import Icon from "@/components/icon";
+import DayCardGrid from "@/components/day-cards";
 import type { Roster, Lineup, BoatType } from "@db/lineup";
 import type { Profile } from "@/lib/database.types";
 import LineupBuilder from "./builder";
 
-export default async function AdminLineupsPage({ searchParams }: { searchParams: Promise<{ event?: string; lineup?: string }> }) {
-  const { event: eventId, lineup: lineupId } = await searchParams;
+export default async function AdminLineupsPage({ searchParams }: { searchParams: Promise<{ event?: string; lineup?: string; blank?: string }> }) {
+  const { event: eventId, lineup: lineupId, blank } = await searchParams;
   const { org } = await requireAdmin();
   const supabase = await createClient();
 
@@ -17,7 +19,40 @@ export default async function AdminLineupsPage({ searchParams }: { searchParams:
     supabase.from("lineups").select("*").eq("org_id", org.id).order("updated_at", { ascending: false }),
   ]);
 
-  // Roster: everyone in the org; if an event is selected, restrict to yes/maybe RSVPs.
+  // Home: Google Forms-style day picker (blue). Selecting a day opens its lineup workspace.
+  if (!eventId && !blank) {
+    const byEvent = new Map<string, { n: number; pub: number }>();
+    for (const l of lineups ?? []) {
+      if (!l.event_id) continue;
+      const c = byEvent.get(l.event_id) ?? { n: 0, pub: 0 };
+      c.n += 1; if (l.published) c.pub += 1;
+      byEvent.set(l.event_id, c);
+    }
+    return (
+      <div className="-m-4 md:-m-6 min-h-full">
+        <div className="border-b px-4 py-5 md:px-8" style={{ background: "var(--g-blue-tint)", borderColor: "var(--g-grey-300)" }}>
+          <div className="mx-auto max-w-[1100px]">
+            <h1 className="text-2xl font-normal" style={{ color: "var(--g-blue)" }}><Icon name="boat" /> Lineups</h1>
+            <p className="mt-1 text-sm" style={{ color: "var(--g-grey-600)" }}>Pick a day to build its boat lineups — the roster is whoever RSVP’d yes/maybe. Or start from the full roster:</p>
+            <Link href="/admin/lineups?blank=1" className="btn-secondary mt-3 inline-block">Blank lineup (full roster)</Link>
+          </div>
+        </div>
+        <div className="px-4 py-5 md:px-8"><div className="mx-auto max-w-[1100px]">
+          <h2 className="mb-3 text-base">Days</h2>
+          <DayCardGrid hrefBase="/admin/lineups?event=" color="var(--g-blue)" soft="var(--g-blue-soft)" empty="No event days yet — create days under Events."
+            days={(events ?? []).map((e) => {
+              const c = byEvent.get(e.id);
+              return { id: e.id, title: e.title, starts_at: e.starts_at,
+                meta: c ? `${c.n} lineup${c.n === 1 ? "" : "s"}${c.pub ? ` · ${c.pub} published` : " · draft"}` : "no lineups yet",
+                metaColor: c?.pub ? "var(--g-green)" : undefined };
+            })} />
+        </div></div>
+      </div>
+    );
+  }
+
+  // Day workspace (or blank full-roster mode).
+  const event = eventId ? (events ?? []).find((e) => e.id === eventId) ?? null : null;
   let allowed: Set<string> | null = null;
   if (eventId) {
     const { data: rs } = await supabase.from("rsvps").select("user_id, status").eq("event_id", eventId).in("status", ["yes", "maybe"]);
@@ -36,24 +71,19 @@ export default async function AdminLineupsPage({ searchParams }: { searchParams:
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-normal">Lineups</h1>
-        <form className="flex items-center gap-2 text-sm">
-          <label>Event:</label>
-          <select name="event" defaultValue={eventId ?? ""} className="input w-auto py-1">
-            <option value="">(none — full roster)</option>
-            {events?.map((p) => <option key={p.id} value={p.id}>{p.title} · {fmtDate(p.starts_at)}</option>)}
-          </select>
-          <button className="btn-secondary py-1">Go</button>
-        </form>
+        <Link href="/admin/lineups" className="btn-text -ml-3" style={{ color: "var(--g-blue)" }}>← Lineups</Link>
+        <h1 className="text-2xl font-normal">{event ? event.title : "Blank lineup"}</h1>
+        {event && <span className="text-sm" style={{ color: "var(--g-grey-600)" }}><LocalTime iso={event.starts_at} /></span>}
+        {!event && <span className="text-sm" style={{ color: "var(--g-grey-600)" }}>full roster — not tied to a day</span>}
       </div>
       <div className="flex flex-wrap gap-2 text-sm">
         {forEvent.map((l) => (
-          <Link key={l.id} href={`/admin/lineups?${eventId ? `event=${eventId}&` : ""}lineup=${l.id}`}
+          <Link key={l.id} href={`/admin/lineups?${eventId ? `event=${eventId}&` : "blank=1&"}lineup=${l.id}`}
             className={`rounded-full border px-3 py-1 ${l.id === lineupId ? "border-sky-600 bg-sky-50" : "border-slate-300"}`}>
             {l.name} <span className="text-slate-400">· {l.boat_type}{l.published ? " · published" : ""}</span>
           </Link>
         ))}
-        <Link href={`/admin/lineups${eventId ? `?event=${eventId}` : ""}`} className={`rounded-full border px-3 py-1 ${!lineupId ? "border-sky-600 bg-sky-50" : "border-dashed border-slate-300"}`}>+ New</Link>
+        <Link href={`/admin/lineups${eventId ? `?event=${eventId}` : "?blank=1"}`} className={`rounded-full border px-3 py-1 ${!lineupId ? "border-sky-600 bg-sky-50" : "border-dashed border-slate-300"}`}>+ New</Link>
       </div>
       <LineupBuilder
         key={current?.id ?? "new"}

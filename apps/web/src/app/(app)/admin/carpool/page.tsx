@@ -1,9 +1,12 @@
+import Link from "next/link";
 import { requireAdmin } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import { fmtDate } from "@/lib/format";
 import type { Profile, Rsvp } from "@/lib/database.types";
 import type { Car, Rider } from "@db/carpool";
 import CarpoolBuilder, { type SavedCarpool } from "./builder";
+import LocalTime from "@/components/local-time";
+import Icon from "@/components/icon";
+import DayCardGrid from "@/components/day-cards";
 
 export default async function AdminCarpoolPage({ searchParams }: { searchParams: Promise<{ event?: string }> }) {
   const { event: eventId } = await searchParams;
@@ -11,6 +14,34 @@ export default async function AdminCarpoolPage({ searchParams }: { searchParams:
   const supabase = await createClient();
   const { data: events } = await supabase.from("events").select("*").eq("org_id", org.id).order("starts_at", { ascending: false }).limit(30);
   const event = events?.find((p) => p.id === eventId) ?? null;
+
+  // Home: Google Forms-style day picker (red). Selecting a day opens its carpool workspace.
+  if (!event) {
+    const { data: cps } = (events ?? []).length
+      ? await supabase.from("carpools").select("event_id, published").in("event_id", (events ?? []).map((e) => e.id))
+      : { data: [] };
+    const cpBy = new Map((cps ?? []).map((c) => [c.event_id, c]));
+    return (
+      <div className="-m-4 md:-m-6 min-h-full">
+        <div className="border-b px-4 py-5 md:px-8" style={{ background: "var(--g-red-soft)", borderColor: "var(--g-grey-300)" }}>
+          <div className="mx-auto max-w-[1100px]">
+            <h1 className="text-2xl font-normal" style={{ color: "var(--g-red)" }}><Icon name="car" /> Carpool</h1>
+            <p className="mt-1 text-sm" style={{ color: "var(--g-grey-600)" }}>Pick a day to coordinate rides — drivers and riders come from that day’s RSVPs.</p>
+          </div>
+        </div>
+        <div className="px-4 py-5 md:px-8"><div className="mx-auto max-w-[1100px]">
+          <h2 className="mb-3 text-base">Days</h2>
+          <DayCardGrid hrefBase="/admin/carpool?event=" color="var(--g-red)" soft="var(--g-red-soft)" empty="No event days yet — create days under Events."
+            days={(events ?? []).map((e) => {
+              const cp = cpBy.get(e.id);
+              return { id: e.id, title: e.title, starts_at: e.starts_at,
+                meta: cp ? (cp.published ? "rides published" : "rides drafted") : "no rides yet",
+                metaColor: cp?.published ? "var(--g-green)" : undefined };
+            })} />
+        </div></div>
+      </div>
+    );
+  }
 
   const riders: Record<string, Rider> = {}, drivers: { id: string; seats: number }[] = [], needsRide: string[] = [];
   let saved: SavedCarpool | null = null;
@@ -39,17 +70,11 @@ export default async function AdminCarpoolPage({ searchParams }: { searchParams:
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-2xl font-normal">Carpool</h1>
-        <form className="flex items-center gap-2 text-sm">
-          <select name="event" defaultValue={eventId ?? ""} className="input w-auto py-1">
-            <option value="">Select an event…</option>
-            {events?.map((p) => <option key={p.id} value={p.id}>{p.title} · {fmtDate(p.starts_at)}</option>)}
-          </select>
-          <button className="btn-secondary py-1">Go</button>
-        </form>
+        <Link href="/admin/carpool" className="btn-text -ml-3" style={{ color: "var(--g-red)" }}>← Carpool</Link>
+        <h1 className="text-2xl font-normal">{event.title}</h1>
+        <span className="text-sm" style={{ color: "var(--g-grey-600)" }}><LocalTime iso={event.starts_at} /></span>
       </div>
-      {!event && <p className="text-slate-500">Pick an event to coordinate rides. Drivers and riders come from RSVPs.</p>}
-      {event && (
+      {(
         event.location_lat == null || event.location_lon == null
           ? <p className="card text-sm text-amber-700">This event has no location coordinates. Edit it (Manage events) and set lat/lon so routes can be computed.</p>
           : <CarpoolBuilder key={event.id} eventId={event.id} destination={{ lat: event.location_lat, lon: event.location_lon, label: event.location_name ?? event.title }}
