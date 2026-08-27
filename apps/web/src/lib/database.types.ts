@@ -150,6 +150,7 @@ export type Form = {
   due_at: string | null;
   status: "draft" | "open" | "closed";
   questions: Json;   // FormQuestion[]
+  ask_weight: boolean;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -267,7 +268,7 @@ export type Database = {
       };
       forms: {
         Row: Row<Form>;
-        Insert: Insert<Form, "id" | "description" | "due_at" | "status" | "questions" | "created_by" | "created_at" | "updated_at">;
+        Insert: Insert<Form, "id" | "description" | "due_at" | "status" | "questions" | "ask_weight" | "created_by" | "created_at" | "updated_at">;
         Update: Partial<Form>;
         Relationships: [
           { foreignKeyName: "forms_org_id_fkey"; columns: ["org_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },

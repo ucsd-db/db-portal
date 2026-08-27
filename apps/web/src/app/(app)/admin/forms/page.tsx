@@ -20,9 +20,19 @@ export default async function AdminFormsPage() {
         <h2 className="text-base font-medium mb-3">Start a new form</h2>
         <div className="flex gap-4">
           <form action={createForm}>
+            <input type="hidden" name="template" value="blank" />
             <button className="card card-hover flex h-32 w-40 flex-col items-center justify-center gap-2 !p-0" style={{ background: "#fff" }}>
               <span className="text-4xl" style={{ color: "var(--g-purple)" }}><Icon name="plus" /></span>
               <span className="text-xs">Blank form</span>
+              <span className="px-2 text-center text-[10px] leading-tight" style={{ color: "var(--g-grey-600)" }}>your questions only</span>
+            </button>
+          </form>
+          <form action={createForm}>
+            <input type="hidden" name="template" value="practice" />
+            <button className="card card-hover flex h-32 w-40 flex-col items-center justify-center gap-2 !p-0" style={{ background: "#fff" }}>
+              <span className="text-4xl" style={{ color: "var(--g-green)" }}><Icon name="boat" /></span>
+              <span className="text-xs">Practice form</span>
+              <span className="px-2 text-center text-[10px] leading-tight" style={{ color: "var(--g-grey-600)" }}>weight + attendance per day built in</span>
             </button>
           </form>
         </div>

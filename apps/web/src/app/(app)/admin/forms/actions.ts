@@ -7,11 +7,13 @@ import { createClient } from "@/lib/supabase/server";
 import type { FormQuestion, Json } from "@/lib/database.types";
 import { cleanHtml } from "@/lib/html";
 
-export async function createForm() {
+/** Start a form from a template. "practice" = the automatic weight question is on; "blank" = custom questions only. */
+export async function createForm(fd: FormData) {
   const { org, userId } = await requireAdmin();
+  const template = String(fd.get("template") ?? "practice");
   const supabase = await createClient();
   const { data, error } = await supabase.from("forms")
-    .insert({ org_id: org.id, title: "Untitled form", created_by: userId })
+    .insert({ org_id: org.id, title: "Untitled form", created_by: userId, ask_weight: template === "practice" })
     .select("id").single();
   if (error) throw new Error(error.message);
   redirect(`/admin/forms/${data.id}`);
@@ -38,6 +40,7 @@ export async function createFormForGroup(fd: FormData) {
 
 export type FormPayload = {
   title: string; description: string; due_at: string | null; status: "draft" | "open" | "closed";
+  ask_weight: boolean;
   questions: FormQuestion[];
   events: { event_id: string; prompt: string | null }[];
 };
@@ -46,7 +49,7 @@ export async function saveForm(id: string, p: FormPayload) {
   const { org } = await requireAdmin();
   const supabase = await createClient();
   const { error } = await supabase.from("forms")
-    .update({ title: p.title.trim() || "Untitled form", description: cleanHtml(p.description), due_at: p.due_at, status: p.status, questions: p.questions.map((q) => ({ ...q, help: q.help ? cleanHtml(q.help) : undefined })) as unknown as Json })
+    .update({ title: p.title.trim() || "Untitled form", description: cleanHtml(p.description), due_at: p.due_at, status: p.status, ask_weight: p.ask_weight, questions: p.questions.map((q) => ({ ...q, help: q.help ? cleanHtml(q.help) : undefined })) as unknown as Json })
     .eq("id", id).eq("org_id", org.id);
   if (error) return { error: error.message };
   // Replace event links.
@@ -74,7 +77,7 @@ export async function duplicateForm(fd: FormData) {
   const { data: src } = await supabase.from("forms").select("*").eq("id", String(fd.get("id"))).eq("org_id", org.id).single();
   if (!src) return;
   const { data: copy } = await supabase.from("forms").insert({
-    org_id: org.id, created_by: userId, title: `${src.title} (copy)`, description: src.description, questions: src.questions, status: "draft",
+    org_id: org.id, created_by: userId, title: `${src.title} (copy)`, description: src.description, questions: src.questions, ask_weight: src.ask_weight, status: "draft",
   }).select("id").single();
   if (copy) redirect(`/admin/forms/${copy.id}`);
 }
