@@ -74,12 +74,9 @@ export default async function AdminCarpoolPage({ searchParams }: { searchParams:
         <h1 className="text-2xl font-normal">{event.title}</h1>
         <span className="text-sm" style={{ color: "var(--g-grey-600)" }}><LocalTime iso={event.starts_at} /></span>
       </div>
-      {(
-        event.location_lat == null || event.location_lon == null
-          ? <p className="card text-sm text-amber-700">This event has no location coordinates. Edit it (Manage events) and set lat/lon so routes can be computed.</p>
-          : <CarpoolBuilder key={event.id} eventId={event.id} destination={{ lat: event.location_lat, lon: event.location_lon, label: event.location_name ?? event.title }}
-              riders={riders} drivers={drivers} needsRide={needsRide} saved={saved} />
-      )}
+      <CarpoolBuilder key={event.id} eventId={event.id}
+        destination={event.location_lat != null && event.location_lon != null ? { lat: event.location_lat, lon: event.location_lon, label: event.location_name ?? event.title } : null}
+        riders={riders} drivers={drivers} needsRide={needsRide} saved={saved} />
     </div>
   );
 }

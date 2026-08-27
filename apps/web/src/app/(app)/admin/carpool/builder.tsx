@@ -11,8 +11,9 @@ const RouteMap = dynamic(() => import("@/components/route-map"), { ssr: false })
 export type SavedCarpool = { data: { cars: Car[]; mode: Mode }; published: boolean };
 const COLORS = ["#2563eb", "#dc2626", "#16a34a", "#d97706", "#7c3aed", "#db2777", "#0891b2", "#65a30d"];
 
+/** destination === null (day has no coordinates): manual assignment only — Optimize and the route map are disabled. */
 export default function CarpoolBuilder({ eventId, destination, riders, drivers, needsRide, saved }: {
-  eventId: string; destination: Destination; riders: Record<string, Rider>; drivers: { id: string; seats: number }[]; needsRide: string[]; saved: SavedCarpool | null;
+  eventId: string; destination: Destination | null; riders: Record<string, Rider>; drivers: { id: string; seats: number }[]; needsRide: string[]; saved: SavedCarpool | null;
 }) {
   const initialCars = useMemo<Car[]>(() => {
     // Start from saved cars, but drop drivers who no longer RSVP'd as drivers and add new ones.
@@ -34,6 +35,7 @@ export default function CarpoolBuilder({ eventId, destination, riders, drivers, 
   const pool = useMemo(() => Object.values(riders).filter((r) => !driverIds.has(r.id) && !seated.has(r.id) && (!onlyNeedsRide || needsRide.includes(r.id))), [riders, driverIds, seated, onlyNeedsRide, needsRide]);
 
   const optimize = () => {
+    if (!destination) return;
     const eligible: Record<string, Rider> = {};
     for (const r of pool) eligible[r.id] = r;
     for (const c of cars) for (const p of c.passengerIds) eligible[p] = riders[p]; // keep manual placements
@@ -46,6 +48,7 @@ export default function CarpoolBuilder({ eventId, destination, riders, drivers, 
   useEffect(() => {
     let cancelled = false;
     (async () => {
+      if (!destination) { setRoutes({}); return; }
       const next: Record<string, OsrmRoute | null> = {};
       for (const c of cars) {
         const pts = carRoutePoints(c, riders, destination, mode);
@@ -78,18 +81,19 @@ export default function CarpoolBuilder({ eventId, destination, riders, drivers, 
     setMsg("error" in r && r.error ? r.error : published ? "Saved & published to members" : "Saved draft");
   });
 
-  const mapCars = cars.map((c, i) => ({ id: c.id, color: COLORS[i % COLORS.length], points: carRoutePoints(c, riders, destination, mode), route: routes[c.id] ?? null, label: riders[c.driverId]?.name ?? "?" }));
+  const mapCars = destination ? cars.map((c, i) => ({ id: c.id, color: COLORS[i % COLORS.length], points: carRoutePoints(c, riders, destination, mode), route: routes[c.id] ?? null, label: riders[c.driverId]?.name ?? "?" })) : [];
 
   return (
     <div className="grid gap-4 lg:grid-cols-[300px_1fr]">
       <div className="space-y-3">
         <div className="card flex flex-wrap gap-2 text-sm">
           <select value={mode} onChange={(e) => setMode(e.target.value as Mode)} className="input w-auto py-1"><option value="pickup">Pickup → event</option><option value="dropoff">Event → dropoff</option></select>
-          <button type="button" onClick={optimize} className="btn-primary py-1">Optimize</button>
+          <button type="button" onClick={optimize} disabled={!destination} title={destination ? undefined : "Needs the day’s location coordinates — assign manually below"} className="btn-primary py-1 disabled:cursor-not-allowed">Optimize</button>
           <button type="button" onClick={() => save(false)} disabled={pending} className="btn-secondary py-1">Save</button>
           <button type="button" onClick={() => save(true)} disabled={pending} className="btn-secondary py-1">Publish</button>
           <label className="flex items-center gap-1 text-xs w-full"><input type="checkbox" checked={onlyNeedsRide} onChange={(e) => setOnlyNeedsRide(e.target.checked)} /> Only people who asked for a ride</label>
         </div>
+        {!destination && <p className="card !p-3 text-xs text-amber-700">This day has no location coordinates, so Optimize and the route map are off — you can still build cars by hand (click a person, then a car). Add the location via the day’s ✎ on the event overview to enable routing.</p>}
         {msg && <p className="text-sm text-slate-600">{msg}</p>}
         <div className="card">
           <h3 className="text-sm font-semibold mb-1">Needs a seat ({pool.length})</h3>
@@ -127,9 +131,15 @@ export default function CarpoolBuilder({ eventId, destination, riders, drivers, 
           {!cars.length && <p className="card text-sm text-slate-500">No drivers yet — drivers come from RSVPs marked &quot;I can drive others&quot;.</p>}
         </div>
       </div>
-      <div className="card p-0 overflow-hidden min-h-[520px]">
-        <RouteMap destination={destination} cars={mapCars} />
-      </div>
+      {destination ? (
+        <div className="card p-0 overflow-hidden min-h-[520px]">
+          <RouteMap destination={destination} cars={mapCars} />
+        </div>
+      ) : (
+        <div className="card flex min-h-[520px] items-center justify-center text-sm" style={{ color: "var(--g-grey-600)" }}>
+          <span>No map — this day has no location coordinates.</span>
+        </div>
+      )}
     </div>
   );
 }
