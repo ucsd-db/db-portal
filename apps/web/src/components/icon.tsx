@@ -2,6 +2,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowDown, faArrowUp, faBars, faCakeCandles, faCalendarDays, faCar, faChair, faCheck, faChevronRight,
   faCircleCheck, faCircleExclamation, faCircleQuestion, faCircleXmark, faClipboardList, faClone, faCrown,
+  faEllipsisVertical,
   faBullhorn, faDragon, faEye, faFileLines, faFlagCheckered, faGear, faHand, faHouse, faLink, faLocationDot,
   faMoon, faPen, faPhone, faPlus, faSailboat, faSun, faTableCells, faThumbtack, faTrashCan,
   faTriangleExclamation, faUser, faUsers, faWeightScale, faXmark,
@@ -18,6 +19,7 @@ export const ICONS = {
   chevron: faChevronRight,
   clone: faClone,             // ⧉ duplicate
   crown: faCrown,             // 👑 driver
+  dots: faEllipsisVertical,   // ⋮ menu
   down: faArrowDown,          // ↓
   dragon: faDragon,           // 🐉 logo
   due: faCircleExclamation,   // ‼ due
