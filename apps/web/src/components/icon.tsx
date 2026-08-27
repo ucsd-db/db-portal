@@ -4,7 +4,7 @@ import {
   faCircleCheck, faCircleExclamation, faCircleQuestion, faCircleXmark, faClipboardList, faClone, faCrown,
   faEllipsisVertical,
   faBullhorn, faDragon, faEye, faFileLines, faFlagCheckered, faGear, faHand, faHouse, faLink, faLocationDot,
-  faMoon, faPen, faPhone, faPlus, faSailboat, faSun, faTableCells, faThumbtack, faTrashCan,
+  faMagnifyingGlass, faMoon, faPen, faPhone, faPlus, faSailboat, faSun, faTableCells, faThumbtack, faTrashCan,
   faTriangleExclamation, faUser, faUsers, faWeightScale, faXmark,
 } from "@fortawesome/free-solid-svg-icons";
 
@@ -40,6 +40,7 @@ export const ICONS = {
   pin: faLocationDot,         // 📍 location
   plus: faPlus,               // ＋
   race: faFlagCheckered,      // 🏁 race
+  search: faMagnifyingGlass,
   seat: faChair,              // 💺 seats
   table: faTableCells,        // ▦
   sun: faSun,                 // 🌝 attendance

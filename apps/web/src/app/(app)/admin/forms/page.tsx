@@ -1,12 +1,7 @@
-import Link from "next/link";
-import Icon from "@/components/icon";
 import { requireAdmin } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
-import LocalTime from "@/components/local-time";
-import { createForm, createFromTemplate, duplicateForm } from "./actions";
-import FormMenu from "./form-menu";
-
-const status: Record<string, [string, string, string]> = { draft: ["Draft", "var(--g-grey-100)", "var(--g-grey-600)"], open: ["Accepting responses", "var(--g-green-soft)", "var(--g-green)"], closed: ["Closed", "#fef7e0", "#b06000"] };
+import type { FormQuestion } from "@/lib/database.types";
+import FormsHome, { type FormRow, type TemplateRow } from "./forms-home";
 
 export default async function AdminFormsPage() {
   const { org } = await requireAdmin();
@@ -15,68 +10,13 @@ export default async function AdminFormsPage() {
     supabase.from("forms").select("*, form_responses(user_id), form_events(event_id)").eq("org_id", org.id).order("created_at", { ascending: false }),
     supabase.from("memberships").select("*", { count: "exact", head: true }).eq("org_id", org.id),
   ]);
-  const templates = (allForms ?? []).filter((f) => f.status === "template");
-  const forms = (allForms ?? []).filter((f) => f.status !== "template");
-  return (
-    <div className="mx-auto max-w-[1100px]">
-      <section className="mb-6">
-        <h2 className="text-base font-medium mb-3">Start a new form</h2>
-        <div className="flex gap-4">
-          <form action={createForm}>
-            <input type="hidden" name="template" value="blank" />
-            <button className="card card-hover flex h-32 w-40 flex-col items-center justify-center gap-2 !p-0" style={{ background: "#fff" }}>
-              <span className="text-4xl" style={{ color: "var(--g-purple)" }}><Icon name="plus" /></span>
-              <span className="text-xs">Blank form</span>
-              <span className="px-2 text-center text-[10px] leading-tight" style={{ color: "var(--g-grey-600)" }}>your questions only</span>
-            </button>
-          </form>
-          {templates.map((t) => (
-            <div key={t.id} className="relative">
-              <FormMenu id={t.id} title={t.title} />
-              <form action={createFromTemplate}>
-                <input type="hidden" name="template_id" value={t.id} />
-                <button className="card card-hover flex h-32 w-40 flex-col items-center justify-center gap-2 !p-0" style={{ background: "#fff" }}>
-                  <span className="text-4xl" style={{ color: "var(--g-green)" }}><Icon name="boat" /></span>
-                  <span className="px-1 text-xs line-clamp-1">{t.title}</span>
-                  <span className="px-2 text-center text-[10px] leading-tight" style={{ color: "var(--g-grey-600)" }}>{(t.questions as unknown[]).length} question{(t.questions as unknown[]).length === 1 ? "" : "s"}{t.ask_weight ? " + weight" : ""} · attendance per day</span>
-                </button>
-              </form>
-            </div>
-          ))}
-        </div>
-        {templates.length > 0 && <p className="mt-2 text-xs" style={{ color: "var(--g-grey-600)" }}>Click a template to start a form from it — or use its ⋮ menu to edit what it includes.</p>}
-      </section>
-      <section>
-        <h2 className="text-base font-medium mb-3">Your forms</h2>
-        {!forms?.length && <p className="text-sm" style={{ color: "var(--g-grey-600)" }}>No forms yet. Forms bundle events (each gets the attendance + ride question) with your own custom questions.</p>}
-        <div className="grid gap-4 grid-cols-[repeat(auto-fill,minmax(210px,1fr))]">
-          {forms?.map((f) => {
-            const responses = (f.form_responses as { user_id: string }[]).length;
-            const st = status[f.status];
-            return (
-              <div key={f.id} className="card card-hover relative !p-0 flex flex-col">
-                <FormMenu id={f.id} title={f.title} />
-                <Link href={`/admin/forms/${f.id}`} className="block h-24 relative rounded-t-lg" style={{ background: "var(--g-purple-soft)" }}>
-                  <div className="absolute inset-x-4 top-4 h-2 rounded" style={{ background: "var(--g-purple)" }} />
-                  <div className="absolute inset-x-4 top-9 space-y-1.5">{[0, 1, 2].map((i) => <div key={i} className="h-1.5 rounded bg-white/80" style={{ width: `${80 - i * 20}%` }} />)}</div>
-                </Link>
-                <div className="p-3 text-sm flex-1">
-                  <Link href={`/admin/forms/${f.id}`} className="font-medium hover:underline line-clamp-2">{f.title}</Link>
-                  <div className="mt-1 text-xs" style={{ color: "var(--g-grey-600)" }}>{(f.form_events as unknown[]).length} event(s){f.due_at && <> · due <LocalTime iso={f.due_at} /></>}</div>
-                  <div className="mt-2 flex items-center justify-between">
-                    <span className="chip" style={{ background: st[1], color: st[2], borderColor: "transparent" }}>{st[0]}</span>
-                    <span className="text-xs" style={{ color: "var(--g-grey-600)" }}>{responses}/{memberCount ?? "?"}</span>
-                  </div>
-                </div>
-                <div className="flex border-t text-xs" style={{ borderColor: "var(--g-grey-300)" }}>
-                  <Link href={`/admin/forms/${f.id}/responses`} className="flex-1 rounded-bl-lg py-2 text-center hover:bg-[var(--g-grey-50)]" style={{ color: "var(--g-blue)" }}>Responses</Link>
-                  <form action={duplicateForm} className="flex-1 border-l" style={{ borderColor: "var(--g-grey-300)" }}><input type="hidden" name="id" value={f.id} /><button className="w-full py-2 hover:bg-[var(--g-grey-50)]" style={{ color: "var(--g-blue)" }}>Duplicate</button></form>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-    </div>
-  );
+  const templates: TemplateRow[] = (allForms ?? []).filter((f) => f.status === "template").map((t) => ({
+    id: t.id, title: t.title, ask_weight: t.ask_weight,
+    qLabels: ((t.questions as unknown as FormQuestion[]) ?? []).map((q) => q.label).filter(Boolean).slice(0, 4),
+  }));
+  const forms: FormRow[] = (allForms ?? []).filter((f) => f.status !== "template").map((f) => ({
+    id: f.id, title: f.title, status: f.status, due_at: f.due_at, created_at: f.created_at,
+    responses: (f.form_responses as { user_id: string }[]).length, events: (f.form_events as unknown[]).length,
+  }));
+  return <FormsHome forms={forms} templates={templates} memberCount={memberCount ?? 0} />;
 }

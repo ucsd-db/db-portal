@@ -19,6 +19,17 @@ export async function createForm(fd: FormData) {
   redirect(`/admin/forms/${data.id}`);
 }
 
+/** Create a fresh blank template and open it in the editor. */
+export async function createTemplate() {
+  const { org, userId } = await requireAdmin();
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("forms")
+    .insert({ org_id: org.id, created_by: userId, title: "Untitled template", status: "template", ask_weight: false })
+    .select("id").single();
+  if (error) throw new Error(error.message);
+  redirect(`/admin/forms/${data.id}`);
+}
+
 /** Start a draft form as a copy of a template (the editable cards next to "Blank form"). */
 export async function createFromTemplate(fd: FormData) {
   const { org, userId } = await requireAdmin();
