@@ -4,29 +4,30 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import Icon, { type IconName } from "@/components/icon";
 
-const memberNav: { href: string; label: string; icon: IconName }[] = [
-  { href: "/dashboard", label: "Board", icon: "board" },
-  { href: "/forms", label: "Forms", icon: "form" },
-  { href: "/events", label: "Events", icon: "calendar" },
-  { href: "/profile", label: "My profile", icon: "user" },
+type NavItem = { href: string; label: string; icon: IconName; color: string };
+const memberNav: NavItem[] = [
+  { href: "/dashboard", label: "Board", icon: "board", color: "var(--g-yellow)" },
+  { href: "/forms", label: "Forms", icon: "form", color: "var(--g-purple)" },
+  { href: "/events", label: "Events", icon: "calendar", color: "var(--g-green)" },
+  { href: "/profile", label: "My profile", icon: "user", color: "var(--g-grey-600)" },
 ];
-const adminNav: { href: string; label: string; icon: IconName }[] = [
-  { href: "/admin/announcements", label: "Announcements", icon: "announce" },
-  { href: "/admin/forms", label: "Forms", icon: "file" },
-  { href: "/admin/events", label: "Events", icon: "calendar" },
-  { href: "/admin/members", label: "Members", icon: "users" },
-  { href: "/admin/lineups", label: "Lineups", icon: "boat" },
-  { href: "/admin/carpool", label: "Carpool", icon: "car" },
-  { href: "/admin/settings", label: "Settings", icon: "gear" },
+const adminNav: NavItem[] = [
+  { href: "/admin/announcements", label: "Announcements", icon: "announce", color: "var(--g-yellow)" },
+  { href: "/admin/forms", label: "Forms", icon: "file", color: "var(--g-purple)" },
+  { href: "/admin/lineups", label: "Lineups", icon: "boat", color: "var(--g-blue)" },
+  { href: "/admin/carpool", label: "Carpool", icon: "car", color: "var(--g-red)" },
+  { href: "/admin/events", label: "Events", icon: "calendar", color: "var(--g-green)" },
+  { href: "/admin/members", label: "Members", icon: "users", color: "#009688" },
+  { href: "/admin/settings", label: "Settings", icon: "gear", color: "var(--g-grey-600)" },
 ];
 
 export default function NavRail({ isAdmin }: { isAdmin: boolean }) {
   const path = usePathname();
-  const item = (n: { href: string; label: string; icon: IconName }) => {
+  const item = (n: NavItem) => {
     const active = path === n.href || path.startsWith(n.href + "/");
     return (
       <Link key={n.href} href={n.href} className={`nav-item ${active ? "nav-item-active" : ""}`}>
-        <span className="w-5 text-center"><Icon name={n.icon} /></span><span className="hidden md:inline">{n.label}</span>
+        <span className="w-5 text-center" style={{ color: n.color }}><Icon name={n.icon} /></span><span className="hidden md:inline">{n.label}</span>
       </Link>
     );
   };
