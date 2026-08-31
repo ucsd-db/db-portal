@@ -7,6 +7,32 @@ import Image from "@tiptap/extension-image";
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
+/** Total image storage the team allows itself (well inside Supabase's 1 GB free tier). */
+const BUCKET_CAP = 200 * 1024 * 1024;
+const mb = (n: number) => (n / 1048576).toFixed(1);
+
+/** If this upload would blow the cap, ask to evict the oldest images first (confirm-gated). */
+async function ensureRoom(supabase: ReturnType<typeof createClient>, incoming: number) {
+  const { data: files } = await supabase.storage.from("images").list("", { limit: 1000, sortBy: { column: "created_at", order: "asc" } });
+  if (!files?.length) return;
+  const sized = files.map((f) => ({ name: f.name, size: (f.metadata as { size?: number } | null)?.size ?? 0 }));
+  let total = sized.reduce((a, f) => a + f.size, 0);
+  if (total + incoming <= BUCKET_CAP) return;
+  const used = total;
+  const doomed: string[] = [];
+  for (const f of sized) {
+    if (total + incoming <= BUCKET_CAP) break;
+    doomed.push(f.name); total -= f.size;
+  }
+  const ok = window.confirm(
+    `Image storage is full (${mb(used)} of ${mb(BUCKET_CAP)} MB used).\n` +
+    `Delete the ${doomed.length} oldest image${doomed.length === 1 ? "" : "s"} to make room?\n` +
+    `Old announcements/forms that still show them will lose those images.`);
+  if (!ok) throw new Error("Upload canceled — image storage is full.");
+  const { error } = await supabase.storage.from("images").remove(doomed);
+  if (error) throw new Error(`Couldn’t free up space: ${error.message}`);
+}
+
 /** Uploads an image to the public Supabase Storage bucket and returns its permanent URL. */
 async function uploadImage(file: File): Promise<string> {
   if (!file.type.startsWith("image/")) throw new Error("That file isn’t an image.");
@@ -14,6 +40,7 @@ async function uploadImage(file: File): Promise<string> {
   const ext = (file.name.split(".").pop() || "png").toLowerCase().replace(/[^a-z0-9]/g, "") || "png";
   const path = `${crypto.randomUUID()}.${ext}`;
   const supabase = createClient();
+  await ensureRoom(supabase, file.size);
   const { error } = await supabase.storage.from("images").upload(path, file, { contentType: file.type });
   if (error) throw new Error(/not authenticated|jwt|denied|security/i.test(error.message) ? "Sign in to attach images." : error.message);
   return supabase.storage.from("images").getPublicUrl(path).data.publicUrl;
