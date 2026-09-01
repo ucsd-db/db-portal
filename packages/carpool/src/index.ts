@@ -19,3 +19,5 @@ export {
   DEFAULT_NOMINATIM_BASE,
 } from './routing'
 export type { OsrmRoute } from './routing'
+export { buildOsrmTableUrl, parseOsrmTable, optimizeCarpool } from './optimize'
+export type { CostMatrix, OptimizeOptions } from './optimize'
