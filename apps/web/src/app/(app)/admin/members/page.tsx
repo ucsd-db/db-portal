@@ -31,9 +31,10 @@ export default async function AdminMembersPage() {
 
       <div className="sheet-wrap">
         <div className="flex items-center gap-2 border-b px-3 py-2 text-xs" style={{ borderColor: "var(--g-grey-300)", background: "var(--g-green-soft)", color: "var(--g-green)" }}><span className="font-medium"><Icon name="table" /> Roster</span><span style={{ color: "var(--g-grey-600)" }}>· click <Icon name="pen" /> to edit a row</span></div>
-        <table className="sheet">
+        <table className="gsheet">
           <thead>
-            <tr><th className="w-8 text-center">#</th>{COLS.map((c) => <th key={c} className="whitespace-nowrap">{c}</th>)}<th>Role</th><th></th></tr>
+            <tr><th className="gutter" />{Array.from({ length: COLS.length + 2 }, (_, i) => <th key={i} className="gutter">{String.fromCharCode(65 + i)}</th>)}</tr>
+            <tr className="labels"><th className="gutter w-8">#</th>{COLS.map((c) => <th key={c}>{c}</th>)}<th>Role</th><th></th></tr>
           </thead>
           <tbody>
             {members.map((m, i) => (
@@ -51,8 +52,8 @@ export default async function AdminMembersPage() {
               />
             ))}
             {pend.map((p, i) => (
-              <tr key={p.email} style={{ color: "var(--g-grey-600)", background: "#fffbeb" }}>
-                <td className="text-center" style={{ background: "var(--g-grey-100)" }}>{members.length + i + 1}</td>
+              <tr key={p.email} className="pending" style={{ color: "var(--g-grey-600)" }}>
+                <td className="gutter">{members.length + i + 1}</td>
                 <td>{p.full_name || "—"}</td><td>{p.email}</td><td>{p.address ?? "—"}</td><td>{p.lat ?? "—"}</td><td>{p.lon ?? "—"}</td><td>{p.city ?? "—"}</td><td>{p.zipcode ?? "—"}</td>
                 <td>{p.car_passengers}</td><td>{p.gender ?? "—"}</td><td>{p.weight_lb ?? "—"}</td>
                 <td><span className="chip !py-0 text-[10px]" style={{ background: "#fef3c7", borderColor: "transparent", color: "#92400e" }}>pending sign-up</span></td>

@@ -99,3 +99,12 @@ button.sheet-cell:hover { background: #f5f6fa; border-color: #c8cde0; }
   width: 36px; text-align: center; font-size: 10px; font-weight: 600; color: #9aa0b8;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace; flex-shrink: 0;
 }
+
+/* Google-Sheets-style members roster */
+.gsheet { border-collapse: collapse; font-size: 11px; min-width: 100%; }
+.gsheet th, .gsheet td { border: 1px solid #e2e5ef; padding: 3px 8px; text-align: left; background: #fff; color: #1a1f36; }
+.gsheet .gutter { background: #f8f9fa !important; color: #9aa0b8 !important; text-align: center; padding: 1px 4px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 10px; font-weight: 600; }
+.gsheet thead .labels th { font-weight: 700; white-space: nowrap; }
+.gsheet tbody tr:hover td { background: #f5f6fa; }
+.gsheet tr.pending td { background: #fffbeb; }
