@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createAccount, lookupEmail, normalizeEmail, startSession } from "@/lib/email-signin";
+import { allowRate, clientIp, RATE_LIMIT_MSG } from "@/lib/rate-limit";
 import { saveResponse, type SubmitState } from "@/lib/save-response";
 
 /**
@@ -13,6 +14,9 @@ export async function submitPublicForm(_: SubmitState, fd: FormData): Promise<Su
   const code = String(fd.get("join") ?? "");
   const formId = String(fd.get("form_id"));
   if (!email) return { error: "Please enter your email." };
+
+  // Anonymous endpoint that can create accounts — throttle per IP per form.
+  if (!(await allowRate(`pubform:${formId}:${await clientIp()}`, 10, 3600))) return { error: RATE_LIMIT_MSG };
 
   const found = await lookupEmail(email);
   let userId = found.userId;

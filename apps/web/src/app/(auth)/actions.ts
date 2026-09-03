@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAccount, lookupEmail, normalizeEmail, safeNext, startSession } from "@/lib/email-signin";
+import { allowRate, clientIp, RATE_LIMIT_MSG } from "@/lib/rate-limit";
 
 export type AuthState = { error?: string; step?: "password" | "name"; email?: string };
 
@@ -17,6 +18,11 @@ export async function signIn(_: AuthState, formData: FormData): Promise<AuthStat
   const email = normalizeEmail(formData.get("email"));
   const next = safeNext(formData.get("next"));
   if (!email) return { error: "Email is required" };
+
+  // Brute-force / enumeration guard: per IP and per targeted email.
+  const ip = await clientIp();
+  if (!(await allowRate(`signin:ip:${ip}`, 10, 600))) return { error: RATE_LIMIT_MSG };
+  if (!(await allowRate(`signin:email:${email}`, 5, 900))) return { error: RATE_LIMIT_MSG };
 
   const found = await lookupEmail(email);
   if (found.userId) {

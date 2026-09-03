@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { allowRate, clientIp } from "@/lib/rate-limit";
 import LocalTime from "@/components/local-time";
 import RichText from "@/components/rich-text";
 import FillForm from "@/app/(app)/forms/[id]/fill-form";
@@ -26,7 +27,11 @@ export default async function PublicFormPage({ params, searchParams }: { params:
   const admin = createAdminClient();
   const { data: form } = await admin.from("forms").select("*, organization:organizations(name, join_code)").eq("id", id).maybeSingle();
   const org = form?.organization as unknown as { name: string; join_code: string } | null;
-  if (!form || !org || org.join_code !== join.trim().toUpperCase() || form.status === "draft") notFound();
+  if (!form || !org || org.join_code !== join.trim().toUpperCase() || form.status === "draft") {
+    // Track failed link/code guesses per IP (slows enumeration; successes are never throttled).
+    await allowRate(`fjoin:${await clientIp()}`, 20, 3600);
+    notFound();
+  }
 
   const [{ data: links }, { data: pickups }] = await Promise.all([
     admin.from("form_events").select("*, event:events(*)").eq("form_id", id).order("sort_order"),
