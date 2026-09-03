@@ -85,3 +85,5 @@ Import the repo, set **Root Directory** to `apps/web`, add the two `NEXT_PUBLIC_
 - [ ] Notifications (email via Supabase / Resend free tier)
 - [ ] Boat risk assessment (weather/wind/tide APIs — Open-Meteo is free)
 - [ ] Multi-org switching for users in more than one team
+
+<!-- deploy kick: verify restored Vercel git connection, 2026-09-02 -->
