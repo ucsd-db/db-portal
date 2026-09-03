@@ -3,12 +3,16 @@
 import { useActionState } from "react";
 import { setPassword, type PasswordState } from "./actions";
 
-export default function PasswordForm() {
+export default function PasswordForm({ isAdmin }: { isAdmin: boolean }) {
   const [state, action, pending] = useActionState<PasswordState, FormData>(setPassword, {});
   return (
     <form action={action} className="card space-y-3 mt-4">
-      <h2 className="font-semibold">Admin password</h2>
-      <p className="text-sm text-slate-500">Members sign in with just their email. As an admin, set a password and you’ll be asked for it when signing in — so nobody can get into the admin panel by typing your email.</p>
+      <h2 className="font-semibold">{isAdmin ? "Admin password" : "Password (optional)"}</h2>
+      <p className="text-sm text-slate-500">
+        {isAdmin
+          ? "Members sign in with just their email. As an admin, set a password and you’ll be asked for it when signing in — so nobody can get into the admin panel by typing your email."
+          : "By default you sign in with just your email. Set a password and it will be required from then on — so nobody can sign in as you by typing your email."}
+      </p>
       <div className="flex gap-2">
         <input name="password" type="password" minLength={8} required placeholder="New password (8+ characters)" className="input" />
         <button disabled={pending} className="btn-secondary whitespace-nowrap">{pending ? "Saving…" : "Set password"}</button>

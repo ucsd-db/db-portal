@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { deletePickupLocation, deleteSavedLocation } from "../actions";
 import PickupForm from "./pickup-form";
 import SavedLocationForm from "./saved-location-form";
+import RotateCode from "./rotate-code";
 
 export default async function AdminSettingsPage() {
   const { org } = await requireAdmin();
@@ -15,7 +16,7 @@ export default async function AdminSettingsPage() {
     <div className="max-w-2xl space-y-6">
       <div>
         <h1 className="text-2xl font-normal">Team settings</h1>
-        <p className="text-sm text-slate-500">Team: <b>{org.name}</b> · join code <span className="font-mono">{org.join_code}</span></p>
+        <div className="text-sm text-slate-500">Team: <b>{org.name}</b> · join code <span className="font-mono">{org.join_code}</span> <RotateCode /></div>
       </div>
       <section>
         <h2 className="text-lg font-medium mb-1">Saved locations</h2>

@@ -13,7 +13,7 @@ export default function LoginForm({ next, initialError }: { next: string; initia
       {/* React 19 resets uncontrolled fields after each action, so on step 2 the email comes back via state as the defaultValue. */}
       <input key={state.step ? state.email : "email"} name="email" type="email" required placeholder="Email" className="input py-3" readOnly={!!state.step} defaultValue={state.email} />
       {state.step === "password" && <>
-        <p className="text-sm" style={grey}>This is an admin account — enter your password.</p>
+        <p className="text-sm" style={grey}>This account has a password — enter it to sign in.</p>
         <input name="password" type="password" required autoFocus placeholder="Password" className="input py-3" />
       </>}
       {state.step === "name" && <>

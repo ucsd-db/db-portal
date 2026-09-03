@@ -16,7 +16,7 @@ export async function submitPublicForm(_: SubmitState, fd: FormData): Promise<Su
 
   const found = await lookupEmail(email);
   let userId = found.userId;
-  if (userId && found.adminWithPassword) return { error: "This is an admin account — please sign in with your password first." };
+  if (userId && found.hasPassword) return { error: "This account has a password — please sign in first, then fill out the form." };
   if (!userId) {
     const fullName = found.pendingName || String(fd.get("full_name") ?? "").trim();
     if (!fullName) return { error: "Looks like you’re new — please enter your name so we can create your account." };

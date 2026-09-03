@@ -7,6 +7,14 @@ import { createClient } from "@/lib/supabase/server";
 import { cleanHtml } from "@/lib/html";
 
 export type AdminState = { error?: string; ok?: boolean };
+
+/** Retires a leaked/overshared join code — old links keep opening forms but stop auto-joining. */
+export async function rotateJoinCode() {
+  const { org } = await requireAdmin();
+  const supabase = await createClient();
+  await supabase.rpc("rotate_join_code", { org: org.id });
+  revalidatePath("/admin/settings");
+}
 const str = (v: FormDataEntryValue | null) => (v === null || String(v).trim() === "" ? null : String(v).trim());
 
 export async function createAnnouncement(_: AdminState, fd: FormData): Promise<AdminState> {
