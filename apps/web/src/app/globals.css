@@ -76,3 +76,26 @@ body { background: var(--g-grey-50); color: var(--g-grey-900); }
 .rich .ProseMirror-selectednode { outline: 2px solid var(--g-blue-soft); }
 .rich img { max-width: 100%; height: auto; border-radius: 6px; margin: .5rem 0; display: block; }
 .rich img.ProseMirror-selectednode { outline: 3px solid var(--g-blue-soft); }
+
+/* Spreadsheet-style lineup grid (mimics the original Db_Lineup_Maker look) */
+.sheet-title { font-size: 11px; font-weight: 700; color: #5a6481; text-transform: uppercase; letter-spacing: .08em; }
+.sheet-cell {
+  position: relative; display: flex; align-items: center; justify-content: center;
+  width: 108px; height: 36px; border: 1px solid #e2e5ef; background: #fff;
+  user-select: none; border-radius: 0; transition: background .12s, border-color .12s;
+}
+button.sheet-cell:hover { background: #f5f6fa; border-color: #c8cde0; }
+.sheet-cell-sel { outline: 2px solid #2563eb; outline-offset: -1px; background: rgba(37,99,235,.06); border-color: #2563eb; z-index: 2; }
+.sheet-cell-target { border-color: #93c5fd; }
+.sheet-name {
+  font-size: 11px; font-weight: 600; color: #1a1f36; letter-spacing: .01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; text-align: center;
+}
+.sheet-badge {
+  position: absolute; top: 3px; left: 5px; font-size: 8px; font-weight: 700; color: #9aa0b8;
+  pointer-events: none; letter-spacing: .05em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.sheet-label {
+  width: 36px; text-align: center; font-size: 10px; font-weight: 600; color: #9aa0b8;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace; flex-shrink: 0;
+}

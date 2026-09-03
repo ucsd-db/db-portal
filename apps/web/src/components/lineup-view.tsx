@@ -1,24 +1,27 @@
 import { ROWS, type Lineup } from "@db/lineup";
 
-/** Read-only lineup grid for members. `names` maps paddler id → display name. */
+/** Read-only lineup grid for members — spreadsheet-style cells like the original lineup maker. */
 export default function LineupView({ name, lineup, names, boatType }: { name: string; lineup: Lineup; names: Record<string, string>; boatType: string }) {
-  const n = (id: string | null) => (id ? names[id] ?? "?" : "—");
+  const n = (id: string | null | undefined) => (id ? names[id] ?? "?" : "");
+  const cell = (badge: string, id: string | null | undefined, extra = "") => (
+    <div className={`sheet-cell ${extra}`}>
+      <span className="sheet-badge">{badge}</span>
+      {id && <span className="sheet-name">{n(id)}</span>}
+    </div>
+  );
   return (
-    <div className="card text-sm">
-      <div className="font-semibold mb-2">{name} <span className="text-slate-400 font-normal">· {boatType}</span></div>
-      <table className="w-full text-xs">
-        <tbody>
-          <tr><td className="py-0.5 text-slate-500 w-10">Drum</td><td colSpan={2} className="text-center">{n(lineup.drummer)}</td></tr>
-          {Array.from({ length: ROWS }, (_, r) => (
-            <tr key={r} className="border-t border-slate-100">
-              <td className="py-0.5 text-slate-500">{r + 1}</td>
-              <td className="py-0.5 w-1/2">{n(lineup.seats[r]?.[0] ?? null)}</td>
-              <td className="py-0.5 w-1/2 text-right">{n(lineup.seats[r]?.[1] ?? null)}</td>
-            </tr>
-          ))}
-          <tr className="border-t border-slate-100"><td className="py-0.5 text-slate-500">Steer</td><td colSpan={2} className="text-center">{n(lineup.steer)}</td></tr>
-        </tbody>
-      </table>
+    <div className="card overflow-x-auto text-sm">
+      <div className="sheet-title mb-2">{name} · {boatType}</div>
+      <div className="mx-auto w-max">
+        <div className="flex justify-center">{cell("C", lineup.drummer)}</div>
+        {Array.from({ length: ROWS }, (_, r) => (
+          <div key={r} className="-mt-px flex">
+            {cell(`${r + 1}L`, lineup.seats[r]?.[0])}
+            {cell(`${r + 1}R`, lineup.seats[r]?.[1], "-ml-px")}
+          </div>
+        ))}
+        <div className="-mt-px flex justify-center">{cell("S", lineup.steer)}</div>
+      </div>
     </div>
   );
 }
