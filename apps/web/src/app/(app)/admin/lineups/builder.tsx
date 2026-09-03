@@ -111,19 +111,22 @@ export default function LineupBuilder({ roster, eventId, initial, division = nul
             {warnings.map((w) => <p key={w}>⚠ {w}</p>)}
           </div>
         )}
-        <div className="card">
-          <div className="mx-auto max-w-md space-y-1">
-            <SeatBtn {...seatProps} seat={{ kind: "drummer" }} label="drummer" />
-            <div className="grid grid-cols-[1fr_28px_1fr] gap-1 items-center">
-              <div className="text-center text-xs text-slate-500">Left · {sw.left.toFixed(0)} lb</div><div />
-              <div className="text-center text-xs text-slate-500">Right · {sw.right.toFixed(0)} lb</div>
-              {Array.from({ length: ROWS }, (_, row) => (
-                <RowCells key={row} row={row} {...seatProps} />
-              ))}
-            </div>
-            <SeatBtn {...seatProps} seat={{ kind: "steer" }} label="steer" />
+        <div className="card overflow-x-auto">
+          <div className="mx-auto w-max">
+            <div className="flex justify-center"><SeatBtn {...seatProps} seat={{ kind: "drummer" }} badge="C" /></div>
+            {Array.from({ length: ROWS }, (_, row) => (
+              <div key={row} className="-mt-px flex items-center">
+                <span className="sheet-label">{weightAt(lineup, roster, row, "left")}</span>
+                <SeatBtn {...seatProps} seat={{ kind: "seat", row, side: "left" }} badge={`${row + 1}L`} />
+                <div className="-ml-px"><SeatBtn {...seatProps} seat={{ kind: "seat", row, side: "right" }} badge={`${row + 1}R`} /></div>
+                <span className="sheet-label">{weightAt(lineup, roster, row, "right")}</span>
+              </div>
+            ))}
+            <div className="-mt-px flex justify-center"><SeatBtn {...seatProps} seat={{ kind: "steer" }} badge="S" /></div>
           </div>
           <div className="mt-3 flex flex-wrap justify-center gap-4 text-xs text-slate-600">
+            <span>Left: <b>{sw.left.toFixed(0)} lb</b></span>
+            <span>Right: <b>{sw.right.toFixed(0)} lb</b></span>
             <span>L−R: <b className={Math.abs(sw.diff) > 30 ? "text-red-600" : ""}>{sw.diff > 0 ? "+" : ""}{sw.diff.toFixed(0)} lb</b></span>
             <span>Front−Back: <b>{fb.diff > 0 ? "+" : ""}{fb.diff.toFixed(0)} lb</b></span>
             <span>Seated: {seated.size}/22</span>
@@ -131,7 +134,7 @@ export default function LineupBuilder({ roster, eventId, initial, division = nul
         </div>
       </div>
       <aside className="card space-y-2 self-start">
-        <div className="flex items-baseline justify-between"><h3 className="font-semibold text-sm">Available ({bench.length})</h3>
+        <div className="flex items-baseline justify-between"><h3 className="sheet-title">Available ({bench.length})</h3>
           {daySet ? (
             <label className="text-[11px] text-slate-500 flex items-center gap-1 cursor-pointer">
               <input type="checkbox" checked={wholeTeam} onChange={(e) => setWholeTeam(e.target.checked)} />whole team
@@ -139,14 +142,16 @@ export default function LineupBuilder({ roster, eventId, initial, division = nul
           ) : <span className="text-[11px] text-slate-500">whole team</span>}</div>
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" className="input py-1" />
         <p className="text-[11px] text-slate-500">Click a paddler, then a seat. Click two seats to swap. Select a seat then click here to unseat.</p>
-        <ul className="max-h-[60vh] overflow-y-auto divide-y divide-slate-100 text-sm">
-          {bench.map((p) => (
-            <li key={p.id}>
+        <ul className="max-h-[60vh] overflow-y-auto">
+          {bench.map((p, i) => (
+            <li key={p.id} className={`flex items-center ${i > 0 ? "-mt-px" : ""}`}>
               <button type="button" onClick={() => clickBench(p.id)}
-                className={`w-full px-1 py-1.5 text-left flex justify-between rounded ${sel?.kind === "roster" && sel.id === p.id ? "bg-sky-100" : "hover:bg-slate-50"}`}>
-                <span className="truncate">{p.name}{elsewhere.has(p.id) && <span className="text-amber-600" title={`also seated in ${elsewhere.get(p.id)!.join(", ")}`}> ⚠</span>}</span>
-                <span className="text-xs text-slate-500 shrink-0">{p.weight || "?"} lb{p.gender ? ` · ${p.gender[0].toUpperCase()}` : ""}{p.canSteer ? " · S" : ""}{p.canDrum ? " · D" : ""}</span>
+                title={`${p.weight || "?"} lb${p.gender ? ` · ${p.gender}` : ""}${p.canSteer ? " · steers" : ""}${p.canDrum ? " · drums" : ""}${elsewhere.has(p.id) ? ` · also seated in ${elsewhere.get(p.id)!.join(", ")}` : ""}`}
+                className={`sheet-cell !w-full flex-1 ${sel?.kind === "roster" && sel.id === p.id ? "sheet-cell-sel" : ""}`}>
+                <span className="sheet-badge">{p.gender ? p.gender[0].toUpperCase() : ""}{p.canSteer ? " S" : ""}{p.canDrum ? " D" : ""}</span>
+                <span className="sheet-name !max-w-[85%]">{p.name}{elsewhere.has(p.id) && <span className="text-amber-600"> ⚠</span>}</span>
               </button>
+              <span className="sheet-label">{p.weight ? p.weight.toFixed(0) : ""}</span>
             </li>
           ))}
           {!bench.length && <li className="text-xs text-slate-400 py-2">Nobody left to seat.</li>}
@@ -159,25 +164,22 @@ export default function LineupBuilder({ roster, eventId, initial, division = nul
 
 type SeatBtnProps = { lineup: Lineup; roster: Roster; isSel: (s: Seat) => boolean; rosterSelected: boolean; onClick: (s: Seat) => void };
 
-function SeatBtn({ seat, label, lineup, roster, isSel, rosterSelected, onClick }: SeatBtnProps & { seat: Seat; label?: string }) {
-  const pid = getSeat(lineup, seat);
-  const p = pid ? roster[pid] : null;
-  const name = pid ? roster[pid]?.name ?? "(left team)" : null;
-  return (
-    <button type="button" onClick={() => onClick(seat)}
-      className={`h-12 w-full rounded-md border px-1 text-xs leading-tight ${isSel(seat) ? "border-sky-600 bg-sky-100 ring-2 ring-sky-300" : pid ? "border-slate-300 bg-white hover:bg-slate-50" : "border-dashed border-slate-300 bg-slate-50 hover:bg-sky-50"} ${rosterSelected && !pid ? "border-sky-400" : ""}`}>
-      {pid ? (<><div className="font-medium truncate">{name}</div><div className="text-slate-500">{p?.weight ?? "?"} lb{p?.sidePreference && p.sidePreference !== "either" ? ` · ${p.sidePreference[0].toUpperCase()}` : ""}</div></>)
-        : <span className="text-slate-400">{label ?? "empty"}</span>}
-    </button>
-  );
+function weightAt(lineup: Lineup, roster: Roster, row: number, side: "left" | "right"): string {
+  const pid = lineup.seats[row]?.[side === "left" ? 0 : 1];
+  const w = pid ? roster[pid]?.weight : null;
+  return w ? w.toFixed(0) : "";
 }
 
-function RowCells({ row, ...seatProps }: SeatBtnProps & { row: number }) {
+function SeatBtn({ seat, badge, lineup, roster, isSel, rosterSelected, onClick }: SeatBtnProps & { seat: Seat; badge: string }) {
+  const pid = getSeat(lineup, seat);
+  const p = pid ? roster[pid] : null;
+  const name = pid ? p?.name ?? "(left team)" : null;
+  const side = p?.sidePreference && p.sidePreference !== "either" ? p.sidePreference[0].toUpperCase() : null;
   return (
-    <>
-      <SeatBtn {...seatProps} seat={{ kind: "seat", row, side: "left" }} />
-      <div className="text-center text-xs text-slate-400">{row + 1}</div>
-      <SeatBtn {...seatProps} seat={{ kind: "seat", row, side: "right" }} />
-    </>
+    <button type="button" onClick={() => onClick(seat)} title={p ? `${p.name} · ${p.weight || "?"} lb${side ? ` · prefers ${p.sidePreference}` : ""}` : undefined}
+      className={`sheet-cell ${isSel(seat) ? "sheet-cell-sel" : ""} ${rosterSelected && !pid ? "sheet-cell-target" : ""}`}>
+      <span className="sheet-badge">{badge}</span>
+      {name && <span className="sheet-name">{name}</span>}
+    </button>
   );
 }

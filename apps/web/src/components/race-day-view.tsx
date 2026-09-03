@@ -31,11 +31,11 @@ export default function RaceDayView({ lineups, names, showDraft = false }: { lin
       {plain.length > 0 && <div className="grid gap-3 sm:grid-cols-2">{plain.map((l) => card(l, l.name))}</div>}
       {[...divisions.entries()].map(([division, boats]) => (
         <div key={division}>
-          <h3 className="mb-2 text-sm font-medium">{division} <span className="font-normal text-slate-400">· {boats.values().next().value?.[0]?.boat_type}</span></h3>
+          <h3 className="sheet-title mb-2">{division} · {boats.values().next().value?.[0]?.boat_type}</h3>
           <div className="space-y-3">
             {[...boats.keys()].sort().map((label) => (
               <div key={label}>
-                <div className="mb-1 text-xs text-slate-500">Boat {label}</div>
+                <div className="sheet-title mb-1 opacity-70">Boat {label}</div>
                 <div className="grid gap-3 sm:grid-cols-2">{boats.get(label)!.map((l) => card(l, l.name))}</div>
               </div>
             ))}
