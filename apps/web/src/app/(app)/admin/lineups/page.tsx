@@ -5,18 +5,22 @@ import LocalTime from "@/components/local-time";
 import Icon from "@/components/icon";
 import DayCardGrid from "@/components/day-cards";
 import type { Roster, Lineup, BoatType } from "@db/lineup";
-import type { Profile } from "@/lib/database.types";
+import type { LineupRow, Profile } from "@/lib/database.types";
 import LineupBuilder from "./builder";
+import RaceDaySections from "./race-day";
 
-export default async function AdminLineupsPage({ searchParams }: { searchParams: Promise<{ event?: string; lineup?: string; blank?: string }> }) {
-  const { event: eventId, lineup: lineupId, blank } = await searchParams;
+type Params = { event?: string; lineup?: string; blank?: string; new?: string; division?: string; dtype?: string; boat?: string; adddiv?: string };
+
+export default async function AdminLineupsPage({ searchParams }: { searchParams: Promise<Params> }) {
+  const sp = await searchParams;
+  const { event: eventId, lineup: lineupId, blank } = sp;
   const { org } = await requireAdmin();
   const supabase = await createClient();
 
   const [{ data: events }, { data: members }, { data: lineups }] = await Promise.all([
     supabase.from("events").select("id, title, starts_at").eq("org_id", org.id).order("starts_at", { ascending: false }).limit(30),
     supabase.from("memberships").select("profile:profiles(*)").eq("org_id", org.id),
-    supabase.from("lineups").select("*").eq("org_id", org.id).order("updated_at", { ascending: false }),
+    supabase.from("lineups").select("*").eq("org_id", org.id).order("created_at", { ascending: true }),
   ]);
 
   // Home: Google Forms-style day picker (blue). Selecting a day opens its lineup workspace.
@@ -53,20 +57,35 @@ export default async function AdminLineupsPage({ searchParams }: { searchParams:
 
   // Day workspace (or blank full-roster mode).
   const event = eventId ? (events ?? []).find((e) => e.id === eventId) ?? null : null;
-  let allowed: Set<string> | null = null;
+  let dayIds: string[] | null = null;
   if (eventId) {
     const { data: rs } = await supabase.from("rsvps").select("user_id, status").eq("event_id", eventId).in("status", ["yes", "maybe"]);
-    allowed = new Set((rs ?? []).map((r) => r.user_id));
+    dayIds = (rs ?? []).map((r) => r.user_id);
   }
+  // Full org roster: seated non-RSVP paddlers still render; the bench filters to the day by default.
   const roster: Roster = {};
   for (const m of members ?? []) {
     const p = m.profile as unknown as Profile;
-    if (!p || (allowed && !allowed.has(p.id))) continue;
+    if (!p) continue;
     roster[p.id] = { id: p.id, name: p.full_name || p.email, weight: p.weight_lb ?? 0, gender: p.gender, sidePreference: p.side_preference, canSteer: p.can_steer, canDrum: p.can_drum };
   }
 
-  const forEvent = (lineups ?? []).filter((l) => (eventId ? l.event_id === eventId : true));
-  const current = lineupId ? (lineups ?? []).find((l) => l.id === lineupId) ?? null : null;
+  const forEvent = ((lineups ?? []) as LineupRow[]).filter((l) => (eventId ? l.event_id === eventId : l.event_id === null));
+  const practiceRows = forEvent.filter((l) => !l.division);
+  const raceRows = forEvent.filter((l) => l.division);
+  const current = lineupId ? forEvent.find((l) => l.id === lineupId) ?? null : null;
+
+  // Race-day context for the builder: from the selected row, or from ?division=…&new=1 (new race).
+  const division = current?.division ?? (sp.new === "1" ? (sp.division || null) : null);
+  const boatLabel = current?.boat_label ?? (division ? sp.boat || "A" : null);
+  const boatType = (current?.boat_type ?? (division ? (sp.dtype as BoatType) || "open" : "open")) as BoatType;
+  const siblings = division
+    ? raceRows.filter((l) => l.division === division && l.boat_label !== boatLabel)
+        .map((l) => ({ name: `${l.division} ${l.boat_label ?? ""}`.trim(), lineup: l.data as unknown as Lineup }))
+    : [];
+
+  const showChooser = !!eventId && forEvent.length === 0 && !sp.new && !sp.adddiv;
+  const addDivision = sp.adddiv === "1";
 
   return (
     <div className="space-y-4">
@@ -76,21 +95,80 @@ export default async function AdminLineupsPage({ searchParams }: { searchParams:
         {event && <span className="text-sm" style={{ color: "var(--g-grey-600)" }}><LocalTime iso={event.starts_at} /></span>}
         {!event && <span className="text-sm" style={{ color: "var(--g-grey-600)" }}>full roster — not tied to a day</span>}
       </div>
-      <div className="flex flex-wrap gap-2 text-sm">
-        {forEvent.map((l) => (
-          <Link key={l.id} href={`/admin/lineups?${eventId ? `event=${eventId}&` : "blank=1&"}lineup=${l.id}`}
-            className={`rounded-full border px-3 py-1 ${l.id === lineupId ? "border-sky-600 bg-sky-50" : "border-slate-300"}`}>
-            {l.name} <span className="text-slate-400">· {l.boat_type}{l.published ? " · published" : ""}</span>
-          </Link>
-        ))}
-        <Link href={`/admin/lineups${eventId ? `?event=${eventId}` : "?blank=1"}`} className={`rounded-full border px-3 py-1 ${!lineupId ? "border-sky-600 bg-sky-50" : "border-dashed border-slate-300"}`}>+ New</Link>
-      </div>
-      <LineupBuilder
-        key={current?.id ?? "new"}
-        roster={roster}
-        eventId={eventId ?? null}
-        initial={current ? { id: current.id, name: current.name, boatType: current.boat_type as BoatType, published: current.published, data: current.data as unknown as Lineup } : null}
-      />
+
+      {showChooser ? (
+        <div>
+          <p className="mb-3 text-sm" style={{ color: "var(--g-grey-600)" }}>Start this day’s lineups from:</p>
+          <div className="flex flex-wrap gap-4">
+            <TemplateCard href={`/admin/lineups?event=${eventId}&adddiv=1`} icon="race" title="Race day"
+              blurb="Divisions (Open, Mixed 500m, …) with boats A/B and a lineup per race." />
+            <TemplateCard href={`/admin/lineups?event=${eventId}&new=practice`} icon="boat" title="Practice"
+              blurb="One boat at a time from the day’s RSVPs." />
+            <TemplateCard href={`/admin/lineups?event=${eventId}&new=custom`} icon="pen" title="Custom"
+              blurb="Blank boat with the whole team on the bench." />
+          </div>
+        </div>
+      ) : (
+        <>
+          {(raceRows.length > 0 || addDivision) && (
+            <RaceDaySections eventId={eventId!} rows={raceRows} currentId={current?.id ?? null} />
+          )}
+          {addDivision && (
+            <form method="GET" action="/admin/lineups" className="card flex flex-wrap items-end gap-2 text-sm">
+              <input type="hidden" name="event" value={eventId!} />
+              <input type="hidden" name="new" value="1" />
+              <input type="hidden" name="boat" value="A" />
+              <label className="grid gap-1">Division name
+                <input name="division" required placeholder="e.g. Mixed 500m" className="input w-48" />
+              </label>
+              <label className="grid gap-1">Type (for warnings)
+                <select name="dtype" className="input w-auto" defaultValue="mixed">
+                  <option value="open">Open</option><option value="mixed">Mixed</option><option value="womens">Women&apos;s</option>
+                </select>
+              </label>
+              <button className="btn-primary">Add division</button>
+              <Link href={`/admin/lineups?event=${eventId}`} className="btn-text">Cancel</Link>
+            </form>
+          )}
+          {practiceRows.length > 0 && (
+            <div className="flex flex-wrap gap-2 text-sm">
+              {practiceRows.map((l) => (
+                <Link key={l.id} href={`/admin/lineups?${eventId ? `event=${eventId}&` : "blank=1&"}lineup=${l.id}`}
+                  className={`rounded-full border px-3 py-1 ${l.id === lineupId ? "border-sky-600 bg-sky-50" : "border-slate-300"}`}>
+                  {l.name} <span className="text-slate-400">· {l.boat_type}{l.published ? " · published" : ""}</span>
+                </Link>
+              ))}
+              <Link href={`/admin/lineups${eventId ? `?event=${eventId}&new=practice` : "?blank=1"}`} className={`rounded-full border px-3 py-1 ${!lineupId && !division ? "border-sky-600 bg-sky-50" : "border-dashed border-slate-300"}`}>+ New</Link>
+            </div>
+          )}
+          {!addDivision && (current || sp.new || raceRows.length === 0) && (
+            <LineupBuilder
+              key={current?.id ?? `new:${division ?? ""}:${boatLabel ?? ""}:${sp.new ?? ""}`}
+              roster={roster}
+              eventId={eventId ?? null}
+              initial={current ? { id: current.id, name: current.name, boatType: current.boat_type as BoatType, published: current.published, data: current.data as unknown as Lineup } : null}
+              defaultBoatType={boatType}
+              division={division}
+              boatLabel={boatLabel}
+              siblings={siblings}
+              dayIds={dayIds}
+              initialWholeTeam={sp.new === "custom" || !eventId}
+            />
+          )}
+        </>
+      )}
     </div>
+  );
+}
+
+function TemplateCard({ href, icon, title, blurb }: { href: string; icon: "race" | "boat" | "pen"; title: string; blurb: string }) {
+  return (
+    <Link href={href} className="w-52 rounded-lg border bg-white p-3 transition-colors hover:border-[var(--g-blue)]" style={{ borderColor: "var(--g-grey-300)" }}>
+      <div className="mb-2 flex h-20 items-center justify-center rounded" style={{ background: "var(--g-blue-tint)", color: "var(--g-blue)" }}>
+        <Icon name={icon} className="text-2xl" />
+      </div>
+      <div className="text-sm font-medium">{title}</div>
+      <div className="mt-0.5 text-xs" style={{ color: "var(--g-grey-600)" }}>{blurb}</div>
+    </Link>
   );
 }

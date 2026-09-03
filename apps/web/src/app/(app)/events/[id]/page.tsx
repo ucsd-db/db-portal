@@ -6,9 +6,8 @@ import { createClient } from "@/lib/supabase/server";
 import LocalTime from "@/components/local-time";
 import RsvpForm from "./rsvp-form";
 import type { Rsvp } from "@/lib/database.types";
-import type { Lineup } from "@db/lineup";
 import type { Car } from "@db/carpool";
-import LineupView from "@/components/lineup-view";
+import RaceDayView from "@/components/race-day-view";
 import RichText from "@/components/rich-text";
 import ConfirmForm from "@/components/confirm-form";
 import { deleteEvent } from "@/app/(app)/admin/actions";
@@ -21,7 +20,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
   if (!event) notFound();
   const [{ data: rsvps }, { data: lineups }, { data: carpool }, { data: teammates }, { data: pickups }] = await Promise.all([
     supabase.from("rsvps").select("*, profile:profiles(full_name)").eq("event_id", id).order("updated_at"),
-    supabase.from("lineups").select("*").eq("event_id", id).eq("published", true).order("name"),
+    supabase.from("lineups").select("*").eq("event_id", id).eq("published", true).order("created_at"),
     supabase.from("carpools").select("*").eq("event_id", id).eq("published", true).maybeSingle(),
     supabase.from("profiles").select("id, full_name, email"),
     supabase.from("pickup_locations").select("*").eq("org_id", event.org_id).eq("active", true).order("sort_order"),
@@ -53,9 +52,7 @@ export default async function EventPage({ params }: { params: Promise<{ id: stri
         {!!lineups?.length && (
           <div className="mt-6">
             <h2 className="font-semibold mb-2">Lineups</h2>
-            <div className="grid gap-3 sm:grid-cols-2">
-              {lineups.map((l) => <LineupView key={l.id} name={l.name} boatType={l.boat_type} lineup={l.data as unknown as Lineup} names={names} />)}
-            </div>
+            <RaceDayView lineups={lineups} names={names} />
           </div>
         )}
         {carpool && (
