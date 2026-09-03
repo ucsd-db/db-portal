@@ -3,8 +3,8 @@
 import { useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  autoFill, emptyLineup, frontBackWeights, getSeat, lineupPaddlerIds, placePaddler,
-  removePaddler, seatKey, sideWeights, swapSeats, toMastersheet, ROWS,
+  autoFill, emptyLineup, frontBackWeights, getSeat, lineupPaddlerIds, lineupWarnings, placePaddler,
+  removePaddler, seatedElsewhere, seatKey, sideWeights, swapSeats, toMastersheet, ROWS,
   type BoatType, type Lineup, type Roster, type Seat,
 } from "@db/lineup";
 import { deleteLineup, saveLineup } from "./actions";
@@ -12,22 +12,44 @@ import { deleteLineup, saveLineup } from "./actions";
 type Initial = { id: string; name: string; boatType: BoatType; published: boolean; data: Lineup } | null;
 type Sel = { kind: "seat"; seat: Seat } | { kind: "roster"; id: string } | null;
 
-export default function LineupBuilder({ roster, eventId, initial }: { roster: Roster; eventId: string | null; initial: Initial }) {
+export default function LineupBuilder({ roster, eventId, initial, division = null, boatLabel = null, siblings = [], dayIds = null, initialWholeTeam = false, defaultBoatType = "open" }: {
+  roster: Roster;
+  eventId: string | null;
+  initial: Initial;
+  /** Boat type for a fresh lineup (race days: the division's type). */
+  defaultBoatType?: BoatType;
+  /** Race-day context: division name + boat label; null division = practice/custom lineup. */
+  division?: string | null;
+  boatLabel?: string | null;
+  /** Other boats of the same division (any race) — cross-boat placements warn, never block. */
+  siblings?: { name: string; lineup: Lineup }[];
+  /** yes/maybe RSVP ids for the day; null = no day (blank mode, full team). */
+  dayIds?: string[] | null;
+  initialWholeTeam?: boolean;
+}) {
   const router = useRouter();
+  const soft = division != null; // race days: gender rules warn instead of blocking
   const [id, setId] = useState(initial?.id ?? null);
-  const [name, setName] = useState(initial?.name ?? "Boat 1");
+  const [name, setName] = useState(initial?.name ?? (soft ? "Race 1" : "Boat 1"));
   const [published, setPublished] = useState(initial?.published ?? false);
-  const [lineup, setLineup] = useState<Lineup>(initial?.data && initial.data.seats ? initial.data : emptyLineup(initial?.boatType ?? "open"));
+  const [lineup, setLineup] = useState<Lineup>(initial?.data && initial.data.seats ? initial.data : emptyLineup(initial?.boatType ?? defaultBoatType));
   const [sel, setSel] = useState<Sel>(null);
   const [error, setError] = useState<string | null>(null);
   const [msg, setMsg] = useState<string | null>(null);
   const [search, setSearch] = useState("");
+  const [wholeTeam, setWholeTeam] = useState(initialWholeTeam);
   const [pending, start] = useTransition();
 
   const seated = useMemo(() => new Set(lineupPaddlerIds(lineup)), [lineup]);
+  const daySet = useMemo(() => (dayIds ? new Set(dayIds) : null), [dayIds]);
+  const elsewhere = useMemo(() => seatedElsewhere(siblings), [siblings]);
   const bench = useMemo(() =>
-    Object.values(roster).filter((p) => !seated.has(p.id) && p.name.toLowerCase().includes(search.toLowerCase()))
-      .sort((a, b) => a.name.localeCompare(b.name)), [roster, seated, search]);
+    Object.values(roster).filter((p) => !seated.has(p.id) && (!daySet || wholeTeam || daySet.has(p.id)) && p.name.toLowerCase().includes(search.toLowerCase()))
+      .sort((a, b) => a.name.localeCompare(b.name)), [roster, seated, search, daySet, wholeTeam]);
+  const warnings = useMemo(() => [
+    ...lineupWarnings(lineup, roster),
+    ...lineupPaddlerIds(lineup).filter((pid) => elsewhere.has(pid)).map((pid) => `${roster[pid]?.name ?? pid} is also in ${elsewhere.get(pid)!.join(", ")}`),
+  ], [lineup, roster, elsewhere]);
   const sw = sideWeights(lineup, roster);
   const fb = frontBackWeights(lineup, roster);
   const nameOf = (pid: string | null) => (pid ? roster[pid]?.name ?? "(left team)" : null);
@@ -37,9 +59,9 @@ export default function LineupBuilder({ roster, eventId, initial }: { roster: Ro
   const clickSeat = (seat: Seat) => {
     setMsg(null);
     if (!sel) { if (getSeat(lineup, seat)) setSel({ kind: "seat", seat }); return; }
-    if (sel.kind === "roster") { apply(placePaddler(lineup, seat, sel.id, roster)); setSel(null); return; }
+    if (sel.kind === "roster") { apply(placePaddler(lineup, seat, sel.id, roster, { soft })); setSel(null); return; }
     if (seatKey(sel.seat) === seatKey(seat)) { setSel(null); return; }
-    apply(swapSeats(lineup, sel.seat, seat, roster)); setSel(null);
+    apply(swapSeats(lineup, sel.seat, seat, roster, { soft })); setSel(null);
   };
   const clickBench = (pid: string) => {
     setMsg(null);
@@ -53,12 +75,13 @@ export default function LineupBuilder({ roster, eventId, initial }: { roster: Ro
   const clear = () => setLineup(emptyLineup(lineup.boatType));
 
   const save = (pub = published) => start(async () => {
-    const r = await saveLineup({ id, eventId, name, boatType: lineup.boatType, data: lineup, published: pub });
+    const r = await saveLineup({ id, eventId, name, boatType: lineup.boatType, division, boatLabel, data: lineup, published: pub });
     if ("error" in r && r.error) { setError(r.error); return; }
     if ("id" in r && r.id) { setId(r.id); setPublished(pub); setMsg(pub ? "Saved & published" : "Saved"); router.refresh(); }
   });
   const del = () => { if (id && confirm("Delete this lineup?")) start(async () => { await deleteLineup(id); router.push(`/admin/lineups${eventId ? `?event=${eventId}` : ""}`); }); };
-  const copy = () => navigator.clipboard.writeText(toMastersheet([{ name, lineup }], roster)).then(() => setMsg("Copied mastersheet (paste into a spreadsheet)"));
+  const sheetName = division ? `${division} ${boatLabel ?? ""} — ${name}`.replace(/\s+/g, " ") : name;
+  const copy = () => navigator.clipboard.writeText(toMastersheet([{ name: sheetName, lineup }], roster)).then(() => setMsg("Copied mastersheet (paste into a spreadsheet)"));
 
   const isSel = (seat: Seat) => sel?.kind === "seat" && seatKey(sel.seat) === seatKey(seat);
   const seatProps = { lineup, roster, isSel, rosterSelected: sel?.kind === "roster", onClick: clickSeat };
@@ -66,10 +89,13 @@ export default function LineupBuilder({ roster, eventId, initial }: { roster: Ro
     <div className="grid gap-4 lg:grid-cols-[1fr_280px]">
       <div className="space-y-3">
         <div className="card flex flex-wrap items-center gap-2 text-sm">
-          <input value={name} onChange={(e) => setName(e.target.value)} className="input w-40" />
-          <select value={lineup.boatType} onChange={(e) => changeBoatType(e.target.value as BoatType)} className="input w-auto">
-            <option value="open">Open</option><option value="mixed">Mixed</option><option value="womens">Women&apos;s</option>
-          </select>
+          {division && <span className="chip whitespace-nowrap">{division}{boatLabel ? ` · Boat ${boatLabel}` : ""} · {lineup.boatType}</span>}
+          <input value={name} onChange={(e) => setName(e.target.value)} className="input w-40" title={division ? "Race name (e.g. Qualifying, Final)" : "Boat name"} />
+          {!division && (
+            <select value={lineup.boatType} onChange={(e) => changeBoatType(e.target.value as BoatType)} className="input w-auto">
+              <option value="open">Open</option><option value="mixed">Mixed</option><option value="womens">Women&apos;s</option>
+            </select>
+          )}
           <button type="button" onClick={fill} className="btn-secondary">Auto-fill</button>
           <button type="button" onClick={clear} className="btn-secondary">Clear</button>
           <button type="button" onClick={removeSelected} disabled={sel?.kind !== "seat"} className="btn-secondary">Unseat</button>
@@ -80,6 +106,11 @@ export default function LineupBuilder({ roster, eventId, initial }: { roster: Ro
           {id && <button type="button" onClick={del} className="text-red-600 text-xs underline">Delete</button>}
         </div>
         {(error || msg) && <p className={`text-sm ${error ? "text-red-600" : "text-green-700"}`}>{error ?? msg}</p>}
+        {warnings.length > 0 && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+            {warnings.map((w) => <p key={w}>⚠ {w}</p>)}
+          </div>
+        )}
         <div className="card">
           <div className="mx-auto max-w-md space-y-1">
             <SeatBtn {...seatProps} seat={{ kind: "drummer" }} label="drummer" />
@@ -101,7 +132,11 @@ export default function LineupBuilder({ roster, eventId, initial }: { roster: Ro
       </div>
       <aside className="card space-y-2 self-start">
         <div className="flex items-baseline justify-between"><h3 className="font-semibold text-sm">Available ({bench.length})</h3>
-          {eventId ? <span className="text-[11px] text-slate-500">yes/maybe RSVPs</span> : <span className="text-[11px] text-slate-500">whole team</span>}</div>
+          {daySet ? (
+            <label className="text-[11px] text-slate-500 flex items-center gap-1 cursor-pointer">
+              <input type="checkbox" checked={wholeTeam} onChange={(e) => setWholeTeam(e.target.checked)} />whole team
+            </label>
+          ) : <span className="text-[11px] text-slate-500">whole team</span>}</div>
         <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search…" className="input py-1" />
         <p className="text-[11px] text-slate-500">Click a paddler, then a seat. Click two seats to swap. Select a seat then click here to unseat.</p>
         <ul className="max-h-[60vh] overflow-y-auto divide-y divide-slate-100 text-sm">
@@ -109,7 +144,7 @@ export default function LineupBuilder({ roster, eventId, initial }: { roster: Ro
             <li key={p.id}>
               <button type="button" onClick={() => clickBench(p.id)}
                 className={`w-full px-1 py-1.5 text-left flex justify-between rounded ${sel?.kind === "roster" && sel.id === p.id ? "bg-sky-100" : "hover:bg-slate-50"}`}>
-                <span className="truncate">{p.name}</span>
+                <span className="truncate">{p.name}{elsewhere.has(p.id) && <span className="text-amber-600" title={`also seated in ${elsewhere.get(p.id)!.join(", ")}`}> ⚠</span>}</span>
                 <span className="text-xs text-slate-500 shrink-0">{p.weight || "?"} lb{p.gender ? ` · ${p.gender[0].toUpperCase()}` : ""}{p.canSteer ? " · S" : ""}{p.canDrum ? " · D" : ""}</span>
               </button>
             </li>

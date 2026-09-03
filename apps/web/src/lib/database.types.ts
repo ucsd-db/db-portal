@@ -178,9 +178,12 @@ export type LineupRow = {
   event_id: string | null;
   name: string;
   boat_type: "open" | "womens" | "mixed";
+  division: string | null;   // race-day division display name; null = practice/custom lineup
+  boat_label: string | null; // "A", "B", ... within the division
   data: Json;
   published: boolean;
   created_by: string | null;
+  created_at: string;
   updated_at: string;
 };
 
@@ -308,7 +311,7 @@ export type Database = {
       };
       lineups: {
         Row: Row<LineupRow>;
-        Insert: Insert<LineupRow, "id" | "event_id" | "boat_type" | "data" | "published" | "created_by" | "updated_at">;
+        Insert: Insert<LineupRow, "id" | "event_id" | "boat_type" | "division" | "boat_label" | "data" | "published" | "created_by" | "created_at" | "updated_at">;
         Update: Partial<LineupRow>;
         Relationships: [
           { foreignKeyName: "lineups_org_id_fkey"; columns: ["org_id"]; isOneToOne: false; referencedRelation: "organizations"; referencedColumns: ["id"] },

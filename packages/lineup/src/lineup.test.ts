@@ -4,8 +4,10 @@ import {
   findPaddler,
   frontBackWeights,
   getSeat,
+  lineupWarnings,
   placePaddler,
   removePaddler,
+  seatedElsewhere,
   sideWeights,
   swapSeats,
 } from './lineup';
@@ -144,5 +146,80 @@ describe('weights', () => {
     l = placePaddler(l, { kind: 'steer' }, 'e', roster).lineup;
     expect(sideWeights(l, roster)).toEqual({ left: 80, right: 160, diff: -80 });
     expect(frontBackWeights(l, roster)).toEqual({ front: 150, back: 90, diff: 60 });
+  });
+});
+
+describe('lineupWarnings / soft placement', () => {
+  it('returns no warnings for open boats', () => {
+    let l = emptyLineup('open');
+    l = placePaddler(l, seat(0, 'left'), 'a', roster).lineup;
+    expect(lineupWarnings(l, roster)).toEqual([]);
+  });
+
+  it('warns for a male paddler on a womens boat (drummer/steer exempt)', () => {
+    let l = emptyLineup('womens');
+    l = placePaddler(l, seat(0, 'left'), 'a', roster, { soft: true }).lineup;
+    l = placePaddler(l, { kind: 'drummer' }, 'c', roster).lineup;
+    expect(lineupWarnings(l, roster)).toEqual(['A cannot paddle on a womens boat']);
+  });
+
+  it('warns when the mixed cap is exceeded', () => {
+    const many = makeRoster(
+      Array.from({ length: 11 }, (_, i) => [`m${i}`, 80, 'male'] as [string, number, 'male']),
+    );
+    let l = emptyLineup('mixed');
+    for (let i = 0; i < 11; i++) {
+      const res = placePaddler(l, seat(Math.floor(i / 2), i % 2 ? 'right' : 'left'), `m${i}`, many, { soft: true });
+      expect(res.error).toBeUndefined();
+      l = res.lineup;
+    }
+    expect(lineupWarnings(l, many)).toEqual(['Mixed boat allows at most 10 men']);
+  });
+
+  it('soft placement succeeds on gender violations but still rejects duplicates', () => {
+    let l = emptyLineup('womens');
+    const soft = placePaddler(l, seat(0, 'left'), 'a', roster, { soft: true });
+    expect(soft.error).toBeUndefined();
+    l = soft.lineup;
+    const dup = placePaddler(l, seat(1, 'right'), 'a', roster, { soft: true });
+    expect(dup.error).toBe('A is already in this boat');
+
+    const hard = placePaddler(emptyLineup('womens'), seat(0, 'left'), 'a', roster);
+    expect(hard.error).toBe('A cannot paddle on a womens boat');
+  });
+
+  it('soft swap succeeds where a strict swap would break gender rules', () => {
+    let l = emptyLineup('womens');
+    l = placePaddler(l, seat(0, 'left'), 'b', roster).lineup;
+    l = placePaddler(l, { kind: 'drummer' }, 'a', roster).lineup;
+    expect(swapSeats(l, seat(0, 'left'), { kind: 'drummer' }, roster).error).toBeDefined();
+    const soft = swapSeats(l, seat(0, 'left'), { kind: 'drummer' }, roster, { soft: true });
+    expect(soft.error).toBeUndefined();
+    expect(getSeat(soft.lineup, seat(0, 'left'))).toBe('a');
+  });
+});
+
+describe('seatedElsewhere', () => {
+  it('maps paddlers to the sibling boats they occupy, deduped', () => {
+    let a1 = emptyLineup('mixed');
+    a1 = placePaddler(a1, seat(0, 'left'), 'a', roster).lineup;
+    a1 = placePaddler(a1, seat(0, 'right'), 'b', roster).lineup;
+    let a2 = emptyLineup('mixed');
+    a2 = placePaddler(a2, seat(3, 'left'), 'a', roster).lineup;
+    let bBoat = emptyLineup('mixed');
+    bBoat = placePaddler(bBoat, seat(5, 'right'), 'b', roster).lineup;
+
+    const map = seatedElsewhere([
+      { name: 'Mixed A', lineup: a1 },
+      { name: 'Mixed A', lineup: a2 },
+      { name: 'Mixed B', lineup: bBoat },
+    ]);
+    expect(map.get('a')).toEqual(['Mixed A']);
+    expect(map.get('b')).toEqual(['Mixed A', 'Mixed B']);
+    expect(map.get('c')).toBeUndefined();
+  });
+
+  it('returns an empty map for no siblings', () => {
+    expect(seatedElsewhere([]).size).toBe(0);
   });
 });

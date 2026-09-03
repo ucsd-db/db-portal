@@ -81,56 +81,78 @@ export function findPaddler(lineup: Lineup, paddlerId: string): Seat | null {
   return null;
 }
 
-/**
- * Validates the whole lineup against boat rules. Returns an error message or null.
- *
- * Rules (drummer and steer are exempt from gender rules on every boat type —
- * the original only exempted the drummer, we exempt both):
- *  - no paddler appears twice in the boat
- *  - every id must exist in the roster
- *  - mixed: at most 10 male and 10 female among the 20 paddling seats
- *  - womens: only female paddlers in the 20 paddling seats
- */
-export function validateLineup(lineup: Lineup, roster: Roster): string | null {
+/** Structural problems that are always errors: unknown ids, same paddler twice in one boat. */
+function hardError(lineup: Lineup, roster: Roster): string | null {
   const seen = new Set<string>();
   for (const id of lineupPaddlerIds(lineup)) {
     if (!roster[id]) return `Unknown paddler "${id}"`;
     if (seen.has(id)) return `${roster[id].name} is already in this boat`;
     seen.add(id);
   }
+  return null;
+}
 
-  if (lineup.boatType === 'open') return null;
+/**
+ * Gender-rule violations, all of them (drummer and steer are exempt on every
+ * boat type — the original only exempted the drummer, we exempt both):
+ *  - mixed: at most 10 male and 10 female among the 20 paddling seats
+ *  - womens: only female paddlers in the 20 paddling seats
+ * Race-day builders place softly and render these as warnings instead of blocking.
+ */
+export function lineupWarnings(lineup: Lineup, roster: Roster): string[] {
+  if (lineup.boatType === 'open') return [];
 
+  const warnings: string[] = [];
   let male = 0;
   let female = 0;
   for (const row of lineup.seats) {
     for (const id of row) {
       if (!id) continue;
-      const p = roster[id]!;
+      const p = roster[id];
+      if (!p) continue;
       if (p.gender === 'male') male++;
       else if (p.gender === 'female') female++;
       if (lineup.boatType === 'womens' && p.gender !== 'female') {
-        return `${p.name} cannot paddle on a womens boat`;
+        warnings.push(`${p.name} cannot paddle on a womens boat`);
       }
     }
   }
   if (lineup.boatType === 'mixed') {
-    if (male > MIXED_CAP) return `Mixed boat allows at most ${MIXED_CAP} men`;
-    if (female > MIXED_CAP) return `Mixed boat allows at most ${MIXED_CAP} women`;
+    if (male > MIXED_CAP) warnings.push(`Mixed boat allows at most ${MIXED_CAP} men`);
+    if (female > MIXED_CAP) warnings.push(`Mixed boat allows at most ${MIXED_CAP} women`);
   }
-  return null;
+  return warnings;
 }
+
+/**
+ * Validates the whole lineup against boat rules. Returns an error message or null.
+ * Hard checks (duplicates, unknown ids) first, then the first gender warning.
+ */
+export function validateLineup(lineup: Lineup, roster: Roster): string | null {
+  return hardError(lineup, roster) ?? lineupWarnings(lineup, roster)[0] ?? null;
+}
+
+export type PlaceOptions = {
+  /** Skip gender rules (still rejects duplicates/unknown ids) — caller shows lineupWarnings instead. */
+  soft?: boolean;
+};
 
 /**
  * Places `paddlerId` in `seat`, replacing whoever is there. Returns the original
  * lineup plus an `error` if the placement breaks a rule (duplicate, gender cap,
- * unknown paddler, invalid seat).
+ * unknown paddler, invalid seat). With `soft`, gender rules don't block.
  */
-export function placePaddler(lineup: Lineup, seat: Seat, paddlerId: string, roster: Roster): LineupResult {
+export function placePaddler(
+  lineup: Lineup,
+  seat: Seat,
+  paddlerId: string,
+  roster: Roster,
+  opts: PlaceOptions = {},
+): LineupResult {
   if (!isValidSeat(seat)) return { lineup, error: 'Invalid seat' };
   if (!roster[paddlerId]) return { lineup, error: `Unknown paddler "${paddlerId}"` };
   const next = setSeat(lineup, seat, paddlerId);
-  const error = validateLineup(next, roster);
+  const error = opts.soft ? hardError(next, roster) : validateLineup(next, roster);
   return error ? { lineup, error } : { lineup: next };
 }
 
@@ -140,13 +162,29 @@ export function removePaddler(lineup: Lineup, seat: Seat): Lineup {
 }
 
 /** Swaps the occupants of two seats (either may be empty). */
-export function swapSeats(lineup: Lineup, a: Seat, b: Seat, roster: Roster): LineupResult {
+export function swapSeats(lineup: Lineup, a: Seat, b: Seat, roster: Roster, opts: PlaceOptions = {}): LineupResult {
   if (!isValidSeat(a) || !isValidSeat(b)) return { lineup, error: 'Invalid seat' };
   const idA = getSeat(lineup, a);
   const idB = getSeat(lineup, b);
   const next = setSeat(setSeat(lineup, a, idB), b, idA);
-  const error = validateLineup(next, roster);
+  const error = opts.soft ? hardError(next, roster) : validateLineup(next, roster);
   return error ? { lineup, error } : { lineup: next };
+}
+
+/**
+ * Which paddlers sit in any of the given sibling boats (for race days: other
+ * boats of the same division, any race). Returns paddler id → boat names, deduped.
+ */
+export function seatedElsewhere(siblings: { name: string; lineup: Lineup }[]): Map<string, string[]> {
+  const out = new Map<string, string[]>();
+  for (const { name, lineup } of siblings) {
+    for (const id of lineupPaddlerIds(lineup)) {
+      const names = out.get(id);
+      if (!names) out.set(id, [name]);
+      else if (!names.includes(name)) names.push(name);
+    }
+  }
+  return out;
 }
 
 export interface SideWeights {

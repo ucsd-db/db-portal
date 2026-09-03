@@ -3,7 +3,7 @@ import Link from "next/link";
 import { requireOrg } from "@/lib/session";
 import { createClient } from "@/lib/supabase/server";
 import LocalTime from "@/components/local-time";
-import LineupView from "@/components/lineup-view";
+import RaceDayView from "@/components/race-day-view";
 import RichText from "@/components/rich-text";
 import EventBatchForm from "@/components/event-batch-form";
 import { deleteEvent, deleteGroup, renameGroup } from "@/app/(app)/admin/actions";
@@ -11,7 +11,6 @@ import ConfirmForm from "@/components/confirm-form";
 import EditDay from "@/components/edit-day";
 import Icon from "@/components/icon";
 import { createFormForGroup } from "@/app/(app)/admin/forms/actions";
-import type { Lineup } from "@db/lineup";
 import type { Car } from "@db/carpool";
 import type { Rsvp } from "@/lib/database.types";
 
@@ -32,7 +31,7 @@ export default async function GroupOverviewPage({ params }: { params: Promise<{ 
   const [{ data: rsvps }, { data: lineups }, { data: carpools }, { data: formLinks }] = eventIds.length
     ? await Promise.all([
         supabase.from("rsvps").select("*").in("event_id", eventIds),
-        supabase.from("lineups").select("*").in("event_id", eventIds).order("name"),
+        supabase.from("lineups").select("*").in("event_id", eventIds).order("created_at"),
         supabase.from("carpools").select("*").in("event_id", eventIds),
         supabase.from("form_events").select("event_id, form:forms(id, title, status, due_at)").in("event_id", eventIds),
       ])
@@ -135,14 +134,7 @@ export default async function GroupOverviewPage({ params }: { params: Promise<{ 
               <div>
                 <div className="flex items-center justify-between text-sm font-medium"><span><Icon name="boat" /> Lineups</span>{isAdmin && <Link href={`/admin/lineups?event=${ev.id}`} className="btn-text -mr-3">Edit</Link>}</div>
                 {!evLineups.length && <p className="text-xs" style={{ color: "var(--g-grey-600)" }}>{isAdmin ? "None yet." : "Not published yet."}</p>}
-                <div className="space-y-2">
-                  {evLineups.map((l) => (
-                    <div key={l.id} className="relative">
-                      {isAdmin && !l.published && <span className="absolute right-2 top-2 chip !py-0 text-[10px]">draft</span>}
-                      <LineupView name={l.name} boatType={l.boat_type} lineup={l.data as unknown as Lineup} names={names} />
-                    </div>
-                  ))}
-                </div>
+                <RaceDayView lineups={evLineups} names={names} showDraft={isAdmin} />
               </div>
 
               <div>
