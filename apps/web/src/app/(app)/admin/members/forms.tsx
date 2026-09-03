@@ -57,7 +57,7 @@ export function MemberRow({ index, profile: p, role, isSelf, roleForm, removeFor
   if (!edit) {
     return (
       <tr>
-        <td className="text-center" style={{ background: "var(--g-grey-100)", color: "var(--g-grey-600)" }}>{index}</td>
+        <td className="gutter">{index}</td>
         <td className="font-medium whitespace-nowrap">{p.full_name || "—"}{isSelf && " (you)"}</td><td>{p.email}</td><td className="max-w-[220px]">{p.address ?? "—"}</td>
         <td>{p.lat ?? "—"}</td><td>{p.lon ?? "—"}</td><td>{p.city ?? "—"}</td><td>{p.zipcode ?? "—"}</td>
         <td>{p.car_passengers > 0 ? <><Icon name="car" /> {p.car_passengers}</> : "0"}</td><td className="capitalize">{p.gender ?? "—"}</td><td>{p.weight_lb ?? "—"}</td>
@@ -67,9 +67,9 @@ export function MemberRow({ index, profile: p, role, isSelf, roleForm, removeFor
     );
   }
   return (
-    <tr style={{ background: "var(--g-blue-tint)" }}>
-      <td className="text-center" style={{ background: "var(--g-grey-100)", color: "var(--g-grey-600)" }}>{index}</td>
-      <td colSpan={12} className="!p-2">
+    <tr>
+      <td className="gutter">{index}</td>
+      <td colSpan={12} className="!p-2" style={{ background: "var(--g-blue-tint)" }}>
         <form action={updateMember} onSubmit={() => setEdit(false)} className="flex flex-wrap items-end gap-2 text-xs">
           <input type="hidden" name="user_id" value={p.id} />
           {FIELDS.filter((f) => f.name !== "email").map((f) => (
