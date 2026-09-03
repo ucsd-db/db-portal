@@ -8,26 +8,33 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 export type EmailLookup = {
   userId: string | null;
-  /** Admin who has set a password — must sign in with it. */
-  adminWithPassword: boolean;
+  /** Account has set a password — must sign in with it. */
+  hasPassword: boolean;
   /** Name from an admin's roster (pending_members), if the email is on one. */
   pendingName: string;
 };
 
 export const normalizeEmail = (v: unknown) => String(v ?? "").trim().toLowerCase();
 
+/** Only allow same-origin path redirects — "//host", "https://…" and "/@evil" userinfo tricks all fall back. */
+export function safeNext(raw: unknown): string {
+  const n = String(raw || "");
+  try {
+    if (n.startsWith("/") && !n.startsWith("//") && new URL(n, "https://a.local").origin === "https://a.local") return n;
+  } catch {}
+  return "/dashboard";
+}
+
 export async function lookupEmail(email: string): Promise<EmailLookup> {
   const admin = createAdminClient();
-  const { data: profile } = await admin.from("profiles").select("id").ilike("email", email).maybeSingle();
+  // Exact match on the normalized email — ilike would treat % and _ in user input as wildcards.
+  const { data: profile } = await admin.from("profiles").select("id").eq("email", email).maybeSingle();
   if (profile) {
-    const [{ data: adminRole }, { data: hasPassword }] = await Promise.all([
-      admin.from("memberships").select("role").eq("user_id", profile.id).eq("role", "admin").limit(1).maybeSingle(),
-      admin.rpc("user_has_password", { uid: profile.id }),
-    ]);
-    return { userId: profile.id, adminWithPassword: !!adminRole && !!hasPassword, pendingName: "" };
+    const { data: hasPassword } = await admin.rpc("user_has_password", { uid: profile.id });
+    return { userId: profile.id, hasPassword: !!hasPassword, pendingName: "" };
   }
-  const { data: pending } = await admin.from("pending_members").select("full_name").ilike("email", email).limit(1).maybeSingle();
-  return { userId: null, adminWithPassword: false, pendingName: pending?.full_name?.trim() ?? "" };
+  const { data: pending } = await admin.from("pending_members").select("full_name").eq("email", email).limit(1).maybeSingle();
+  return { userId: null, hasPassword: false, pendingName: pending?.full_name?.trim() ?? "" };
 }
 
 /** Creates the auth user (profile + roster claim happen via DB triggers). */

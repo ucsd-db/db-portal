@@ -9,7 +9,7 @@ export default async function ProfilePage() {
       <h1 className="text-2xl font-normal mb-1">My profile</h1>
       <p className="text-sm text-slate-500 mb-4">Weight and side preference feed the lineup builder; your address is only used for carpool matching (geocoded, never shown to other members).</p>
       <ProfileForm profile={profile} />
-      {isAdmin && <PasswordForm />}
+      <PasswordForm isAdmin={isAdmin} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import type { Membership, Organization, Profile } from "@/lib/database.types";
 
 export type Session = {
@@ -39,8 +40,15 @@ export async function requireOrg() {
   return { ...s, membership: s.membership, org: s.membership.organization };
 }
 
+/** Admin accounts can be signed into with just their (guessable) email, so a password is mandatory. */
+export const adminHasPassword = cache(async (uid: string): Promise<boolean> => {
+  const { data } = await createAdminClient().rpc("user_has_password", { uid });
+  return !!data;
+});
+
 export async function requireAdmin() {
   const s = await requireOrg();
   if (!s.isAdmin) redirect("/dashboard");
+  if (!(await adminHasPassword(s.userId))) redirect("/admin-password");
   return s;
 }

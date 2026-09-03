@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { createAccount, lookupEmail, normalizeEmail, startSession } from "@/lib/email-signin";
+import { createAccount, lookupEmail, normalizeEmail, safeNext, startSession } from "@/lib/email-signin";
 
 export type AuthState = { error?: string; step?: "password" | "name"; email?: string };
 
@@ -15,12 +15,12 @@ export type AuthState = { error?: string; step?: "password" | "name"; email?: st
  */
 export async function signIn(_: AuthState, formData: FormData): Promise<AuthState> {
   const email = normalizeEmail(formData.get("email"));
-  const next = String(formData.get("next") || "/dashboard");
+  const next = safeNext(formData.get("next"));
   if (!email) return { error: "Email is required" };
 
   const found = await lookupEmail(email);
   if (found.userId) {
-    if (found.adminWithPassword) {
+    if (found.hasPassword) {
       const password = String(formData.get("password") ?? "");
       if (!password) return { step: "password", email };
       const supabase = await createClient();
