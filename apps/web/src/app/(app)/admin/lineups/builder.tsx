@@ -28,9 +28,10 @@ export default function LineupBuilder({ roster, eventId, initial, division = nul
   initialWholeTeam?: boolean;
 }) {
   const router = useRouter();
-  const soft = division != null; // race days: gender rules warn instead of blocking
+  // No restrictions anywhere: only "one seat per person per boat" blocks; gender rules just warn.
+  const soft = true;
   const [id, setId] = useState(initial?.id ?? null);
-  const [name, setName] = useState(initial?.name ?? (soft ? "Race 1" : "Boat 1"));
+  const [name, setName] = useState(initial?.name ?? (division ? "Race 1" : "Boat 1"));
   const [published, setPublished] = useState(initial?.published ?? false);
   const [lineup, setLineup] = useState<Lineup>(initial?.data && initial.data.seats ? initial.data : emptyLineup(initial?.boatType ?? defaultBoatType));
   const [sel, setSel] = useState<Sel>(null);
